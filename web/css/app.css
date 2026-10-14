@@ -1,0 +1,1099 @@
+/* CleanSahel ERP · hoja de estilo única.
+   Sin framework. El objetivo es que se pueda leer entera de un vistazo. */
+
+:root {
+  --tinta:        #16191d;
+  --tinta-media:  #4a5158;
+  --tinta-tenue:  #7d858d;
+  --linea:        #e2e6ea;
+  --fondo:        #f5f7f9;
+  --papel:        #ffffff;
+
+  /* Identidad Sahel. NO es una eleccion estetica de este proyecto: los cuatro
+     colores estan extraidos literalmente del logo original de la aplicacion
+     anterior, que esta en web/img/logo-sahel.svg. Si se cambian, deja de ser
+     la marca y pasa a ser un ERP azul cualquiera. */
+  --sahel-azul:       #1e3a6e;   /* azul marino del marco y del texto SAHEL */
+  --sahel-gota-1:     #7dd3fc;   /* degradado de la gota, extremo claro */
+  --sahel-gota-2:     #0ea5e9;   /* degradado de la gota, extremo azul */
+  --sahel-gota-borde: #0284c7;
+
+  --marca:        var(--sahel-azul);
+  --marca-oscura: #16294d;
+  --marca-tenue:  #e8eef7;
+
+  --peligro:      #b3261e;
+  --peligro-tenue:#fbeae9;
+  --aviso:        #8a5a00;
+  --aviso-tenue:  #fdf3e0;
+  --bien:         #0f6f3f;
+  --bien-tenue:   #e7f4ec;
+
+  --radio:  8px;
+  --sombra: 0 1px 2px rgba(22,25,29,.06), 0 4px 12px rgba(22,25,29,.05);
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--fondo);
+  color: var(--tinta);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.oculto { display: none !important; }
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
+
+/* ── Acceso ──────────────────────────────────────────────────────────── */
+
+.acceso {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(160deg, #0b5546 0%, #0f6f5c 55%, #12876f 100%);
+}
+.acceso__caja {
+  width: 100%;
+  max-width: 380px;
+  background: var(--papel);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.22);
+  padding: 28px;
+}
+.acceso__marca { display: flex; gap: 12px; align-items: center; margin-bottom: 22px; }
+.acceso__logo { font-size: 30px; line-height: 1; }
+.acceso__marca h1 { font-size: 20px; }
+.acceso__marca p { margin: 2px 0 0; color: var(--tinta-tenue); font-size: 13px; }
+.acceso__form { display: grid; gap: 7px; }
+.acceso__form label { font-size: 13px; font-weight: 500; color: var(--tinta-media); margin-top: 6px; }
+
+.ajuste-api { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--linea); font-size: 13px; }
+.ajuste-api summary { cursor: pointer; color: var(--tinta-media); }
+.ajuste-api label { display: block; margin: 12px 0 5px; font-weight: 500; }
+.fila-botones { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ── Formularios ─────────────────────────────────────────────────────── */
+
+input, select, textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  font: inherit;
+  color: var(--tinta);
+  background: var(--papel);
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--marca);
+  outline-offset: -1px;
+  border-color: var(--marca);
+}
+input:disabled, select:disabled { background: var(--fondo); color: var(--tinta-tenue); }
+
+.btn {
+  padding: 9px 15px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--papel);
+  color: var(--tinta);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: var(--fondo); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn--principal { background: var(--marca); border-color: var(--marca); color: #fff; }
+.btn--principal:hover:not(:disabled) { background: var(--marca-oscura); }
+.btn--peligro { color: var(--peligro); border-color: #f0cfcd; }
+.btn--peligro:hover:not(:disabled) { background: var(--peligro-tenue); }
+.btn--tenue { border-color: transparent; color: var(--tinta-media); }
+.btn--tenue:hover:not(:disabled) { background: var(--fondo); }
+.btn--mini { padding: 4px 9px; font-size: 13px; }
+.btn--ancho { width: 100%; margin-top: 14px; }
+
+/* ── Armazón ─────────────────────────────────────────────────────────── */
+
+.app { display: grid; grid-template-columns: 232px 1fr; height: 100%; }
+
+.lateral {
+  background: var(--papel);
+  border-right: 1px solid var(--linea);
+  display: flex;
+  flex-direction: column;
+}
+.lateral__marca {
+  padding: 18px 18px 14px;
+  font-weight: 600;
+  font-size: 16px;
+  border-bottom: 1px solid var(--linea);
+}
+.lateral__menu { flex: 1; overflow-y: auto; padding: 10px 10px; }
+.lateral__grupo {
+  padding: 14px 8px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+}
+.lateral__enlace {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radio);
+  color: var(--tinta-media);
+  text-decoration: none;
+  font-size: 14px;
+}
+.lateral__enlace:hover { background: var(--fondo); color: var(--tinta); }
+.lateral__enlace.activo { background: var(--marca-tenue); color: var(--marca-oscura); font-weight: 600; }
+.lateral__pastilla {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  background: var(--fondo);
+  border: 1px solid var(--linea);
+  border-radius: 20px;
+  padding: 1px 7px;
+  color: var(--tinta-tenue);
+}
+.lateral__enlace.activo .lateral__pastilla { background: #fff; border-color: var(--marca-tenue); }
+.lateral__pie { border-top: 1px solid var(--linea); padding: 12px; }
+.lateral__usuario { font-size: 13px; color: var(--tinta-media); margin-bottom: 4px; }
+.lateral__usuario b { display: block; color: var(--tinta); font-size: 14px; }
+.lateral__usuario span { font-size: 11px; color: var(--tinta-tenue); }
+
+.contenido { display: flex; flex-direction: column; overflow: hidden; }
+.barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  height: 60px;
+  background: var(--papel);
+  border-bottom: 1px solid var(--linea);
+  flex: none;
+}
+.barra h1 { font-size: 17px; }
+.vista { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* ── Tarjetas y tablas ───────────────────────────────────────────────── */
+
+.panel {
+  min-width: 0;
+  background: var(--papel);
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  box-shadow: var(--sombra);
+  margin-bottom: 18px;
+}
+.panel__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--linea);
+  flex-wrap: wrap;
+}
+.panel__cabecera h2 { font-size: 15px; }
+.panel__cuerpo { padding: 18px; }
+.panel__cuerpo--liso { padding: 0; }
+
+.rejilla { display: grid; gap: 14px; }
+.rejilla--2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.rejilla--3 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.rejilla--4 { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+
+.campo { display: grid; gap: 5px; }
+.campo label { font-size: 13px; font-weight: 500; color: var(--tinta-media); }
+.campo--ancho { grid-column: 1 / -1; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--tinta-tenue);
+  border-bottom: 1px solid var(--linea);
+  background: #fafbfc;
+  white-space: nowrap;
+}
+td { padding: 11px 14px; border-bottom: 1px solid var(--linea); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #fafbfc; }
+.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 13px; }
+.mono { font-family: var(--mono); font-size: 13px; }
+.tenue { color: var(--tinta-tenue); }
+.pequeno { font-size: 12.5px; }
+.centro { text-align: center; }
+
+.estado {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--fondo);
+  color: var(--tinta-media);
+  border: 1px solid var(--linea);
+}
+.estado--bien   { background: var(--bien-tenue);   color: var(--bien);   border-color: #c7e5d5; }
+.estado--aviso  { background: var(--aviso-tenue);  color: var(--aviso);  border-color: #f0dcb4; }
+.estado--peligro{ background: var(--peligro-tenue);color: var(--peligro);border-color: #f0cfcd; }
+.estado--marca  { background: var(--marca-tenue);  color: var(--marca-oscura); border-color: #c3e2da; }
+
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--marca-tenue); color: var(--marca-oscura);
+  display: grid; place-items: center; font-weight: 600; font-size: 13px; flex: none;
+}
+
+/* ── Métricas ────────────────────────────────────────────────────────── */
+
+.metrica { padding: 15px 17px; }
+.metrica__etiqueta {
+  font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--tinta-tenue); margin-bottom: 5px;
+}
+.metrica__valor {
+  font-size: 25px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.metrica__nota { font-size: 12.5px; color: var(--tinta-tenue); margin-top: 3px; }
+
+/* ── Avisos ──────────────────────────────────────────────────────────── */
+
+.alerta {
+  padding: 10px 13px;
+  border-radius: var(--radio);
+  font-size: 13.5px;
+  margin: 10px 0 0;
+  border: 1px solid transparent;
+}
+.alerta--error  { background: var(--peligro-tenue); color: var(--peligro); border-color: #f0cfcd; }
+.alerta--bien   { background: var(--bien-tenue);    color: var(--bien);    border-color: #c7e5d5; }
+.alerta--aviso  { background: var(--aviso-tenue);   color: var(--aviso);   border-color: #f0dcb4; }
+.alerta--info   { background: var(--marca-tenue);   color: var(--marca-oscura); border-color: #c3e2da; }
+
+.vacio { padding: 34px 18px; text-align: center; color: var(--tinta-tenue); }
+.vacio__icono { font-size: 30px; display: block; margin-bottom: 8px; opacity: .5; }
+
+.avisos {
+  position: fixed; bottom: 18px; right: 18px; z-index: 50;
+  display: flex; flex-direction: column; gap: 8px; max-width: 380px;
+}
+.avisos .alerta { margin: 0; box-shadow: var(--sombra); background: var(--papel); }
+
+.etiqueta {
+  font-size: 12px; padding: 3px 9px; border-radius: 20px;
+  border: 1px solid var(--linea); color: var(--tinta-tenue);
+}
+.etiqueta--bien { background: var(--bien-tenue); color: var(--bien); border-color: #c7e5d5; }
+.etiqueta--error{ background: var(--peligro-tenue); color: var(--peligro); border-color: #f0cfcd; }
+
+.pista { font-size: 12.5px; color: var(--tinta-tenue); margin: 6px 0 0; }
+//
+// `min-width: 0` NO ES DECORATIVO.
+//
+// `.contenido` es un flex vertical, y un panel es un hijo suyo. En un flex, un
+// hijo tiene `min-width: auto`: no baja de la anchura de su contenido, aunque
+// le digas lo contrario. Y dentro del panel hay una tabla, así que el panel se
+// quedaba con la anchura de la tabla —432 px en un móvil de 420— y los últimos
+// 12 píxeles, que eran el final de la fila, quedaban fuera sin que se pudiera
+// desplazar.
+//
+// `overflow-x:auto` en la envoltura de la tabla no arregla eso: si el padre es
+// más ancho que la pantalla, la envoltura también, y la barra sale de la vista.
+//
+// Por eso aquí: min-width 0 en la columna, y min-width 0 en el panel. Es el
+// clásico detalle que hace que un flex «no haga lo que dice».
+//
+.pila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.pila--fin { justify-content: flex-end; }
+.separador { height: 1px; background: var(--linea); margin: 18px 0; }
+
+.cargando { padding: 34px; text-align: center; color: var(--tinta-tenue); }
+
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; }
+  .vista { padding: 16px; }
+
+  /* ── Menú lateral deslizable ─────────────────────────────────────────────
+     Aquí estaba `.lateral { display: none }` y no había ninguna forma de
+     abrirla: en un móvil la aplicación se quedaba en la página del panel, sin
+     navegación. Los enlaces existían en el DOM, pero eso no los hace visibles
+     —y durante varias fases se dio por hecho que sí lo eran. */
+  .lateral {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 274px;
+    max-width: 84vw;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    box-shadow: 0 0 40px rgba(22,25,29,.22);
+  }
+  .app.menu-abierto .lateral { transform: translateX(0); }
+}
+
+/* El velo solo se usa en móvil. */
+.velo { position: fixed; inset: 0; z-index: 45; background: rgba(22,25,29,.45); }
+.velo[hidden] { display: none; }
+
+/* El botón de abrir vive en la barra y solo se ve en móvil. */
+.menu-btn {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 40px; height: 40px; flex: 0 0 40px;
+  border: 1px solid var(--linea); border-radius: var(--radio);
+  background: var(--papel); color: var(--sahel-azul);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.menu-btn:active { background: var(--marca-tenue); }
+@media (max-width: 800px) { .menu-btn { display: inline-flex; } }
+
+.menu-cerrar {
+  display: none;
+  margin-left: auto;
+  width: 34px; height: 34px;
+  border: 0; border-radius: var(--radio);
+  background: transparent; color: var(--tinta-media);
+  font-size: 17px; cursor: pointer;
+}
+@media (max-width: 800px) { .menu-cerrar { display: block; } }
+
+.lateral__nombre {
+  font-size: 15px; font-weight: 800; letter-spacing: .14em; color: var(--sahel-azul);
+}
+.lateral__lema {
+  font-size: 8.5px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--sahel-azul); opacity: .7;
+}
+.lateral__marca { display: flex; align-items: center; gap: 10px; }
+
+/* ── Capa modal ──────────────────────────────────────────────────────── */
+
+.capa {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(22,25,29,.45);
+  display: grid; place-items: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+.capa__dialogo {
+  width: 100%;
+  max-width: 720px;
+  margin: auto;
+  box-shadow: 0 24px 60px rgba(0,0,0,.3);
+  /* Un elemento de una rejilla vale, por omisión, lo que mida su contenido.
+     Con una tabla ancha dentro, el diálogo se salía de la pantalla en lugar de
+     dejar que la tabla se desplazara dentro de él. */
+  min-width: 0;
+}
+
+/* ── Línea de albarán ────────────────────────────────────────────────── */
+
+.linea-albaran {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--fondo);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+}
+@media (max-width: 700px) { .linea-albaran { flex-wrap: wrap; } .linea-albaran > div { flex: 1 1 45% !important; } }
+
+.estado--bien.mono, .estado--peligro.mono { border: none; background: none; padding: 0; }
+
+/* Aviso de JavaScript no cargado. Visible por defecto; app.js lo oculta. */
+.aviso-sin-js {
+  display: block;
+  margin: 0 0 16px;
+  padding: 10px 13px;
+  border-radius: var(--radio);
+  background: var(--peligro-tenue);
+  color: var(--peligro);
+  border: 1px solid #f0cfcd;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.aviso-sin-js.oculto { display: none; }
+
+/* ── La gota de Sahel ───────────────────────────────────────────────────────
+   Dibujada en SVG para que escale igual en un movil de 390 px que en un
+   albaran de 10 cm, sin usar dos versiones del mismo dibujo. */
+.gota { display: block; }
+.brand-sahel { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand-sahel__texto { display: flex; flex-direction: column; line-height: 1.05; }
+.brand-sahel__nombre {
+  font-size: 17px; font-weight: 800; letter-spacing: .12em;
+  color: var(--sahel-azul);
+}
+.brand-sahel__lema {
+  font-size: 8.5px; font-weight: 500; letter-spacing: .18em;
+  color: var(--sahel-azul); opacity: .75; text-transform: uppercase;
+}
+
+/* ── Impresion ──────────────────────────────────────────────────────────────
+   Todo lo que se imprime —albaranes, tarjetas, listados— comparte estas
+   reglas. En papel no hay barra lateral, ni botones, ni fondo de pantalla. */
+.solo-impresion { display: none; }
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: #fff !important; color: #000; }
+  .lateral, .barra-superior, .no-imprimir, .btn, .menu-btn { display: none !important; }
+  .panel, .tarjeta, .contenido { box-shadow: none !important; border: 0 !important; padding: 0 !important; }
+  .solo-impresion { display: block !important; }
+  table { break-inside: auto; }
+  tr, .albaran-bloque { break-inside: avoid; page-break-inside: avoid; }
+  thead { display: table-header-group; }
+  h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+}
+
+.acceso__gota { flex: 0 0 auto; }
+.acceso__titulo {
+  font-size: 26px; font-weight: 800; letter-spacing: .16em;
+  color: var(--sahel-azul); margin: 0;
+}
+.acceso__lema {
+  font-size: 10px; font-weight: 500; letter-spacing: .2em;
+  color: var(--sahel-azul); opacity: .75; text-transform: uppercase; margin: 2px 0 0;
+}
+.acceso__descripcion { font-size: 12.5px; color: var(--tinta-tenue); margin: 6px 0 0; }
+
+/* ── Ventas: clientes, pedidos, entregas ───────────────────────────────────── */
+.codigo-token {
+  padding: 14px; border: 1px dashed var(--sahel-azul); border-radius: var(--radio);
+  background: var(--marca-tenue); text-align: center; word-break: break-all;
+}
+.codigo-token code { font-size: 15px; color: var(--sahel-azul); }
+
+.fila-botones { display: flex; gap: 6px; justify-content: flex-end; }
+.fila-filtros { display: flex; align-items: center; gap: 8px; }
+.fila-titulo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fila-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding-top: 10px; border-top: 1px solid var(--linea); font-size: 16px;
+}
+.fila-total b { font-size: 20px; color: var(--sahel-azul); }
+
+.fila-servicio {
+  display: flex; gap: 14px; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--linea); flex-wrap: wrap;
+}
+
+/* La barra de PROGRESO. Antes se llamaba `.barra`, el mismo nombre que la
+   cabecera de la aplicación, y la sustituía: la cabecera se quedaba con 5 px de
+   alto y el botón de menú se salía por arriba de la pantalla. Se renombra. */
+.barra-progreso {
+  height: 5px; border-radius: 3px; background: var(--linea); overflow: hidden; margin-top: 4px;
+}
+.barra-progreso__relleno { height: 100%; background: var(--sahel-gota-2); transition: width .25s; }
+
+.metrica { }
+.metrica__valor { font-size: 18px; font-weight: 600; color: var(--sahel-azul); }
+
+.bloque { margin-top: 20px; }
+.bloque > h3 { margin-bottom: 8px; font-size: 13px; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--tinta-tenue); }
+
+/* ── Buscador con sugerencias ───────────────────────────────────────────────
+   El mismo campo se usa en toda la aplicación para elegir lo que ya existe:
+   productos, clientes, recetas. Escribe, filtran, toca. */
+.buscador { position: relative; }
+.buscador input[type="search"] { width: 100%; }
+.buscador__lista {
+  position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 3px);
+  max-height: 280px; overflow-y: auto;
+  background: var(--papel); border: 1px solid var(--linea);
+  border-radius: var(--radio); box-shadow: var(--sombra);
+}
+.buscador__opcion {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  width: 100%; text-align: left; padding: 8px 11px;
+  border: 0; border-bottom: 1px solid var(--linea); border-radius: 0;
+  background: transparent; font-size: 14px; cursor: pointer;
+}
+.buscador__opcion:last-child { border-bottom: 0; }
+.buscador__opcion:hover,
+.buscador__opcion:focus-visible { background: var(--marca-tenue); }
+.buscador__sub { color: var(--tinta-tenue); font-size: 12px; font-family: var(--mono); }
+.buscador__nada { padding: 10px 12px; color: var(--tinta-tenue); font-size: 13px; }
+
+/* ── Separar pendientes de histórico ───────────────────────────────────────
+   La lista de trabajo enseña lo que hay que hacer. Lo ya hecho no desaparece:
+   se guarda en un panel aparte, con su cuenta y su botón para abrirlo. */
+.historico { margin-top: 18px; }
+.historico__cabecera {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 10px 14px; margin-bottom: 0;
+  background: var(--fondo); border: 1px solid var(--linea);
+  border-radius: var(--radio) var(--radio) 0 0;
+  font-size: 13px; color: var(--tinta-media); cursor: pointer; text-align: left;
+}
+.historico__cabecera:hover { background: var(--marca-tenue); }
+.historico__cuerpo { border: 1px solid var(--linea); border-top: 0; border-radius: 0 0 var(--radio) var(--radio); }
+.historico__contador {
+  font-family: var(--mono); font-size: 12px;
+  background: var(--papel); border: 1px solid var(--linea);
+  border-radius: 10px; padding: 1px 8px;
+}
+
+/* ── Tablas anchas en móvil ─────────────────────────────────────────────────
+   Con muchas columnas, la última —que suele ser la de acción— se sale de la
+   pantalla y el scroll horizontal la esconde justo donde el usuario la
+   necesita. Las columnas de fecha son las que primero sobran: el orden lo
+   Understand el orden sin ellas. */
+@media (max-width: 700px) {
+  .tabla .col-fecha { display: none; }
+  .tabla code, .tabla .mono { white-space: nowrap; }
+  .tabla-envoltura { margin: 0 -4px; }
+  /* El veredicto de material es una frase larga («Faltan 490 400 UD de
+     Botella 500 ml PET»). Sin tope, esa celda sola empujaba la tabla entera y
+     sacaba de la pantalla el botón de acción. Que envuelva: tres renglones
+     caben, la última columna no. */
+  .tabla .col-material { max-width: 120px; }
+  .tabla .col-material > div { overflow-wrap: anywhere; }
+  /* 14px de relleno a cada lado son 28 por celda: con cinco columnas, 140px de
+     la pantalla que no contienen ni una letra. En móvil se aprieta. */
+  .tabla th, .tabla td { padding-left: 6px; padding-right: 6px; }
+  .tabla { font-size: 13px; }
+  /* El «uds» de la cantidad sobra en el móvil: la columna «Cantidad» ya lo
+     dice. Y aquí es donde se gana el ancho que le faltaba a la tabla. */
+  .solo-ancho { display: none; }
+}
+
+/* ── Filas que se pulsan ────────────────────────────────────────────────────
+   Cuando la tabla no cabe en un móvil, la última columna —la de acción— queda
+   fuera de la vista. Convertir la fila entera en el botón evita tener que
+   arrastrar la tabla para llegar a ella. */
+.fila-pulsable { cursor: pointer; }
+.fila-pulsable:hover { background: var(--hover, #f6f7f9); }
+.fila-pulsable:focus-within, .fila-pulsable:active { background: var(--hover, #f6f7f9); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FIRMA EN PANTALLA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.firma { display: flex; flex-direction: column; gap: 8px; }
+
+.firma__marco {
+  border: 1.5px dashed var(--linea-fuerte, #c8cdd6);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+  /* ESTA LÍNEA ES LA IMPORTANTE. Sin ella el navegador se queda con el gesto
+     de deslizar para hacer scroll y la línea sale cortada al firmar, porque la
+     punta del dedo va por delante del trazo. */
+  touch-action: none;
+}
+.firma__marco:focus-within { border-color: var(--azul, #2f5bd0); border-style: solid; }
+
+.firma__lienzo { display: block; cursor: crosshair; }
+
+.firma__pie {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.firma__pie .pista { margin: 0; }
+
+/* La línea de firma impresa, en el documento. */
+.firma__zona {
+  min-height: 58px; border-bottom: 1px solid #2b2f36;
+  display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 6px;
+}
+.firma__zona img { max-height: 54px; max-width: 78%; }
+.firma__zona--vacia::after {
+  content: 'Pendiente de firma'; color: #8a93a2; font-size: 11px;
+  font-style: italic; align-self: center;
+}
+
+/* ── Cifras de la hoja de reparto ────────────────────────────────────────── */
+.ficha-cifras {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin-bottom: 14px;
+}
+.cifra {
+  background: var(--fondo, #f7f8fa); border: 1px solid var(--linea, #e2e6ec);
+  border-radius: 10px; padding: 10px 12px; text-align: center;
+}
+.cifra__n { font-size: 24px; font-weight: 700; line-height: 1.1; color: #1a2333; }
+.cifra__t { font-size: 11px; color: #6b7482; margin-top: 3px; }
+@media (max-width: 560px) {
+  .ficha-cifras { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Una fila que se toca también, para el móvil: la parada entera es el botón. */
+@media (max-width: 760px) {
+  .fila-pulsable td:last-child .btn { width: 100%; padding: 11px 14px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA CIFRA DEL COBRO
+   ══════════════════════════════════════════════════════════════════════════
+
+   Es lo más grande de la pantalla a propósito. El repartidor va con el cliente
+   delante y un pie en el escalón: si el número es pequeño, se lee por encima y
+   se cobra de memoria, que es como se cobran mal.
+
+   Y no hay ningún campo al lado. No es que esté escondido: es que no existe.
+   Si estuviera, tarde o temprano alguien lo rellenaría —el cliente «dice que son
+   500»— y el importe dejaría de salir del pedido.
+*/
+.cobro-cifra {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #0f2f1e;
+  color: #eaf7ee;
+}
+.cobro-cifra__etiqueta {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  opacity: .75;
+}
+.cobro-cifra__valor {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cobro-cifra--grande { padding: 20px; }
+.cobro-cifra--grande .cobro-cifra__valor { font-size: 40px; }
+.cobro-cifra--pagado {
+  background: #eef3ee;
+  color: #2c5c3b;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+@media (max-width: 480px) {
+  .cobro-cifra__valor { font-size: 24px; }
+  .cobro-cifra--grande .cobro-cifra__valor { font-size: 32px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CAJA
+   ══════════════════════════════════════════════════════════════════════════
+
+   La cifra que la caja compara con lo que cuenta va a la DERECHA y en grande.
+   Todo lo demás se aparta. En una pantalla donde hay dos números —el que
+   debería haber y el que hay— el que manda tiene que ser el primero que se
+   lee, y no puede estar en una celda pequeña con dos decimales y una coma
+   que la hace parecer más pequeña de lo que es.
+*/
+.col-dinero { text-align: right; }
+.col-dinero .cobro-cifra__valor { font-size: 24px; }
+
+.tabla td.col-dinero .cobro-cifra__valor {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #0f2f1e;
+  color: #eaf7ee;
+}
+
+/* Un descuadre con su color y no solo con su signo. «-400» en una tabla es
+   un número; en rojo es un problema. */
+.tabla td.pequeno .col-dinero > div[style*="b00"] { font-weight: 600; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CAJA EN UN MÓVIL
+   ══════════════════════════════════════════════════════════════════════════
+
+   La caja usa el móvil, y la cifra grande se come la fila: con cuatro columnas
+   y un chip de 24 px, el botón «Recibir» salía de la pantalla sin aviso.
+
+   Lo que se ve es lo que se puede hacer. En pantalla estrecha desaparece la
+   columna secundaria —lo cobrado y los cobros por verificar, que están en el
+   detalle— y se queda repartidor, cifra y botón. La cifra baja un poco, y a
+   partir de 360 px se parte en dos líneas para no empujar nada.
+
+   Y el botón se queda pegado al borde derecho, que es donde está el pulgar.
+*/
+@media (max-width: 640px) {
+  .tabla .col-secundaria { display: none; }
+  .tabla td.col-dinero .cobro-cifra__valor {
+    font-size: 18px;
+    padding: 4px 8px;
+  }
+  .tabla th, .tabla td { padding-left: 4px; padding-right: 4px; }
+  .tabla .col-dinero { white-space: nowrap; }
+}
+
+@media (max-width: 380px) {
+  .tabla td.col-dinero .cobro-cifra__valor { font-size: 16px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMERCIALES · MAPA DE MALI
+
+   Nada de esto depende de internet. El contorno son 676 puntos que vienen de
+   la base y se pintan en SVG: en una zona sin cobertura el mapa se abre
+   igual, que es donde hace falta.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.comerciales { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.comerciales__cabeza { margin: 0; }
+.comerciales__principal {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 900px) { .comerciales__principal { grid-template-columns: 1fr; } }
+
+.comerciales__secundario {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--borde, #e2e0d8);
+}
+
+/* ─── Los filtros ──────────────────────────────────────────────────────── */
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--panel, #fff);
+  border: 1px solid var(--borde, #e2e0d8);
+  border-radius: 10px;
+}
+.filtros .etiqueta { margin-right: 0.3rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b6b6b; }
+.filtros .etiqueta--separada { margin-left: auto; }
+
+/* Un filtro activo tiene que verse ACTIVO, no solo ser el primero. El periodo
+   por defecto es el mes, y si no se ve cuál está elegido nadie sabe por qué
+   la pantalla enseña estos números y no otros. */
+.chip {
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--borde, #d8d5cc);
+  background: #fff;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.chip:hover { border-color: #9a958a; }
+.chip--activo {
+  background: #1f4a3d;
+  border-color: #1f4a3d;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ─── El mapa ─────────────────────────────────────────────────────────── */
+
+.mapa__caja {
+  background: var(--panel, #fff);
+  border: 1px solid var(--borde, #e2e0d8);
+  border-radius: 12px;
+  padding: 0.9rem;
+}
+.mapa__svg { width: 100%; height: auto; display: block; touch-action: manipulation; }
+
+.mapa__zona {
+  fill: #e8e4d8;
+  stroke: #fff;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: fill 120ms ease;
+}
+.mapa__zona:hover { fill: #d8d2bf; }
+.mapa__zona:focus-visible { outline: 3px solid #1f4a3d; outline-offset: 2px; }
+
+/* Verde SOLO cuando hay objetivo y se ha llegado. Sin objetivo, gris. */
+.mapa__zona--cumplida { fill: #cfe3d4; }
+.mapa__zona--cumplida:hover { fill: #b9d8c1; }
+
+.mapa__zona--activa { fill: #f2c14e; stroke: #8a6a12; stroke-width: 2.4; }
+.mapa__foco { fill: none; stroke: #8a6a12; stroke-width: 2; opacity: 0.65; }
+
+.mapa__leyenda { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.6rem; font-size: 0.8rem; color: #6b6b6b; }
+.leyenda { display: inline-flex; align-items: center; gap: 0.35rem; }
+.mapa__muestra { width: 13px; height: 13px; border-radius: 3px; background: #e8e4d8; border: 1px solid #fff; display: inline-block; }
+.mapa__muestra.mapa__zona--cumplida { background: #cfe3d4; }
+.mapa__muestra.mapa__zona--activa { background: #f2c14e; border-color: #8a6a12; }
+
+/* Los nombres de las zonas, debajo del mapa. El mapa es la forma y estos son
+   los rótulos: una silueta sin nombre no dice nada. */
+.mapa__lista { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.7rem; }
+.zona-pill {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--borde, #d8d5cc);
+  background: #fff;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+.zona-pill:hover { border-color: #9a958a; }
+.zona-pill--activa { background: #f2c14e; border-color: #8a6a12; font-weight: 600; }
+
+/* ─── La ficha ────────────────────────────────────────────────────────── */
+
+.comerciales__datos { min-height: 12rem; }
+
+.ficha { display: flex; flex-direction: column; gap: 1rem; }
+.ficha--vacia {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 16rem;
+  padding: 2rem;
+  border: 2px dashed var(--borde, #ddd9cc);
+  border-radius: 12px;
+  color: #6b6b6b;
+}
+.ficha--vacia h3 { margin: 0 0 0.4rem; color: #2b2b2b; }
+
+.ficha__cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--borde, #e2e0d8);
+}
+.ficha__cab h3 { margin: 0; font-size: 1.3rem; letter-spacing: 0.02em; }
+.ficha__cab p { margin: 0.2rem 0 0; }
+.ficha h4 { margin: 0.2rem 0 0; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b6b6b; }
+
+.cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.55rem 0.7rem;
+  background: #faf9f5;
+  border-radius: 8px;
+}
+.cifra__et { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b6b6b; }
+.cifra__va { font-size: 1.05rem; font-weight: 600; }
+.cifra__no { font-size: 0.7rem; color: #8a6a12; }
+
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.lista__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: #faf9f5;
+  border-radius: 6px;
+  font-size: 0.88rem;
+}
+.lista__item--principal { background: #fdf6e3; box-shadow: inset 3px 0 0 #f2c14e; }
+.lista__item .tenue { margin-left: auto; }
+
+.pastilla {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #1f4a3d;
+  color: #fff;
+}
+
+/* El importe con la moneda debajo: el número manda, la unidad es un detalle. */
+.importe { display: inline-flex; flex-direction: column; line-height: 1.15; }
+.importe .tenue { font-size: 0.7em; font-weight: 400; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMERCIALES · MAPA DE GESTIÓN, FICHAS Y EDICIÓN
+
+   Lo que se puede editar tiene una caja distinta de lo que no. Un número
+   calculado que parece un campo editable es la forma más rápida de que un
+   ranking deje de ser un ranking.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.comerciales { display: flex; flex-direction: column; gap: 1rem; }
+.seccion { margin: 0 0 .5rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: #6b6b6b; }
+.seccion-mini { margin: 0; font-size: .76rem; text-transform: uppercase; letter-spacing: .05em; color: #6b6b6b; }
+
+/* ─── Las tarjetas de arriba: el resumen de un vistazo ────────────────── */
+
+.tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .5rem; }
+.tarjeta {
+  display: flex; flex-direction: column; gap: .1rem;
+  padding: .6rem .7rem;
+  background: #fff;
+  border: 1px solid var(--borde, #e2e0d8);
+  border-radius: 10px;
+}
+.tarjeta__et { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: #6b6b6b; }
+.tarjeta__va { font-size: 1.15rem; font-weight: 700; }
+
+.comerciales__principal {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+@media (max-width: 980px) { .comerciales__principal { grid-template-columns: 1fr; } }
+.comerciales__col { min-width: 0; }
+
+/* ─── El mapa: la zona principal se ve distinguished ──────────────────── */
+
+.mapa__zona--principal { fill: #cfe3d4; }
+.mapa__zona--principal:hover { fill: #b9d8c1; }
+.mapa__muestra.mapa__zona--principal { background: #cfe3d4; }
+
+/* ─── Los comerciales, como lista con su puesto ─────────────────────────── */
+
+.lista--comerciales { gap: .35rem; }
+.item-comercial {
+  display: flex; align-items: center; gap: .4rem;
+  background: #fff;
+  border: 1px solid var(--borde, #e2e0d8);
+  border-radius: 8px;
+  padding: .3rem .5rem;
+}
+.item-comercial--activo { border-color: #1f4a3d; box-shadow: inset 3px 0 0 #1f4a3d; }
+.item-comercial__btn {
+  flex: 1; display: flex; align-items: center; gap: .6rem;
+  background: none; border: 0; text-align: left; cursor: pointer; padding: .2rem;
+  font: inherit; color: inherit;
+}
+.item-comercial__puesto {
+  font-weight: 800; color: #8a6a12; min-width: 2rem;
+}
+.item-comercial__cuerpo { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
+.item-comercial__cuerpo .tenue { font-size: .74rem; }
+
+.btn--plano { background: none; border: 0; color: #1f4a3d; text-decoration: underline; padding: .2rem .35rem; cursor: pointer; font: inherit; }
+.btn--peligro { color: #9a2c2c; }
+.btn--chico { padding: .25rem .6rem; font-size: .8rem; }
+
+/* ─── Editable y no editable: que se note ──────────────────────────────── */
+
+.bloque-editable {
+  border: 1px dashed #b9d8c1;
+  background: #f7fbf8;
+  border-radius: 10px;
+  padding: .7rem .8rem;
+}
+.bloque-editable__cab { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .4rem; }
+.bloque { background: #faf9f5; border-radius: 10px; padding: .7rem .8rem; }
+
+.elegible {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .3rem .4rem; border-radius: 6px; cursor: pointer;
+}
+.elegible:hover { background: #eef6f1; }
+.elegible .tenue { margin-left: auto; font-size: .74rem; }
+
+.campo--corto { max-width: 13rem; }
+.tabla--chica { font-size: .84rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMERCIALES · MAPA ARRIBA, RANKING ABAJO
+
+   El mapa es lo que hay que mirar. El ranking informa, pero no compite con el
+   mapa por la atención: por eso va debajo y no en una fila de tarjetas encima.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.seccion-principal { display: flex; flex-direction: column; gap: .6rem; }
+.seccion-secundaria { margin-top: 2rem; padding-top: 1.25rem; border-top: 2px solid var(--borde, #e2e0d8); }
+
+.mapa__svg--grande { max-height: 62vh; display: block; }
+.mapa__lienzo { display: flex; justify-content: center; }
+.mapa__lienzo .mapa__svg { width: 100%; max-width: 760px; }
+/* El nombre va DENTRO del polígono y tiene que LEERSE a un vistazo. Con 15px
+   en un viewBox de 1000 de ancho salía diminuto: se veía Mali, pero no se
+   sabía qué era cada trozo. 26px es lo que hace falta para leerlo en un móvil
+   sin herramientas, que es donde se mira de verdad. */
+.mapa__etiqueta {
+  font-size: 26px; font-weight: 700; fill: #2c2c2c;
+  paint-order: stroke; stroke: rgba(255, 255, 255, 0.92); stroke-width: 7px; stroke-linejoin: round;
+}
+
+.filtros__hueco { flex: 1; }
+
+/* ─── Zonas: la lista bajo el mapa ─────────────────────────────────────── */
+
+.zonas__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: .5rem;
+}
+.zona {
+  display: flex; flex-direction: column; align-items: flex-start; gap: .2rem;
+  padding: .6rem .7rem;
+  background: #fff;
+  border: 1px solid var(--borde, #e2e0d8);
+  border-radius: 10px;
+}
+.zona--activa { border-color: #1f4a3d; box-shadow: inset 0 0 0 2px #1f4a3d; }
+.zona__nombre {
+  background: none; border: 0; padding: 0; font: inherit; font-weight: 700;
+  color: inherit; cursor: pointer; text-align: left;
+}
+.zona__datos { font-size: .76rem; color: #6b6b6b; }
+
+/* ─── El panel de gestión de una zona ──────────────────────────────────── */
+
+.panel-zona {
+  margin-top: 1rem;
+  border: 1px solid #1f4a3d;
+  border-radius: 12px;
+  background: #f7fbf8;
+  padding: 1rem;
+}
+.panel-zona__cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.panel-zona__cab h3 { margin: 0; }
+.panel-zona__cab p { margin: .15rem 0 .6rem; }
+
+.asignar { margin-top: .5rem; }
+.asignar__fila {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
+  padding: .55rem .6rem;
+  background: #fff;
+  border: 1px solid var(--borde, #d8d5cc);
+  border-radius: 8px;
+}
+.asignar__fila .campo { max-width: 15rem; }
+.asignar__fila input[type=number] { width: 5rem; }
+.casilla { display: inline-flex; align-items: center; gap: .25rem; font-size: .82rem; }
+
+.ranking .tabla { background: #fff; }
+
+/* ── CONFIGURACIÓN ─────────────────────────────────────────────────────────── */
+.serie {
+  border: 1px solid var(--linea, #dcdcdc);
+  border-radius: 8px;
+  padding: .7rem .8rem;
+  display: grid;
+  gap: .3rem;
+}
+.serie--off { opacity: .6; background: #f7f7f7; }
+.serie__cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.serie__aviso {
+  font-size: .82rem;
+  background: #fff4e5;
+  border-left: 3px solid #d97706;
+  padding: .3rem .5rem;
+  border-radius: 4px;
+  color: #7c4a03;
+}
+.serie__botones { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .3rem; }
+.fila-fila { display: flex; align-items: center; gap: .5rem; min-height: 34px; }
+.sub { font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; color: var(--tenue, #6b7280); margin: .8rem 0 .1rem; }
+.pila--grande { gap: 1.1rem; }

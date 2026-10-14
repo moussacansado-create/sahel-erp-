@@ -1,0 +1,263 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TARJETA DE CLIENTE
+   ═══════════════════════════════════════════════════════════════════════════
+   85,6 × 54 mm: el tamaño de una tarjeta bancaria. Se imprime en papel grueso
+   y se plastifica, así que las medidas van en milímetros DE VERDAD, no en
+   píxeles: una tarjeta que en pantalla mide 324 px necesita 324 px de papel,
+   y eso no es una tarjeta.
+
+   En pantalla se muestra a tamaño real con un borde de papel alrededor, para
+   que quien la prepara vea lo que va a salir de la impresora. */
+
+.tarjeta-lienzo {
+  background: #e9ecf1;
+  padding: 26px 18px;
+  display: flex; flex-direction: column; gap: 22px; align-items: center;
+}
+
+/* ── Las instrucciones, que NO se imprimen ─────────────────────────────── */
+.tarjeta-instrucciones {
+  width: 85.6mm;
+  background: #fff;
+  border: 1px solid #cfd6e0;
+  border-left: 4px solid #2f5bd0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 12.5px;
+  color: #2b323e;
+  line-height: 1.5;
+}
+.tarjeta-instrucciones h3 {
+  margin: 0 0 7px; font-size: 11px; letter-spacing: 1.3px; text-transform: uppercase;
+  color: #2f5bd0; font-weight: 700;
+}
+.tarjeta-instrucciones ol { margin: 0; padding-left: 20px; }
+.tarjeta-instrucciones li { margin-bottom: 3px; }
+.tarjeta-instrucciones code {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  background: #eef1f6; padding: 1px 5px; border-radius: 4px; font-size: 12px;
+}
+
+/* ── El marco de recorte ──────────────────────────────────────────────────
+   Va POR FUERA de la tarjeta y mide exactamente lo mismo: 85,6 × 54 mm, con
+   `border-box` para que el borde esté DENTRO de esas medidas y no las empuje.
+   El borde es la guía de corte con regla o guillotina, así que tiene que verse
+   entero, fino y de un trazo limpio. */
+.tarjeta-marco {
+  width: 85.6mm;
+  height: 54mm;
+  box-sizing: border-box;
+  border: 0.25mm solid #1b2330;
+  background: #fff;
+  /* En pantalla se insinúa, para que se vea el recorte sin que el trazo
+     compita con el diseño. Al imprimir se pone a negro y sólido. */
+  position: relative;
+}
+
+/* ── La tarjeta ────────────────────────────────────────────────────────── */
+.tarjeta {
+  /* Ocupa el marco entero. Antes llevaba `border: 0.5mm` propio, que con el
+     marco delante sumaba medio milímetro y descuadraba el tamaño físico. */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 2mm;
+  background: linear-gradient(155deg, #ffffff 0%, #f7f9fc 62%, #eef2f9 100%);
+  padding: 3.4mm 4mm;
+  display: grid;
+  grid-template-columns: 1fr 20mm;
+  gap: 3mm;
+  color: #131922;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Una banda azul baja, como las tarjetas de banco. */
+.tarjeta::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 9mm;
+  background: linear-gradient(90deg, #2f5bd0, #1e3f9e);
+}
+
+.tarjeta__izq { display: flex; flex-direction: column; min-width: 0; }
+
+.tarjeta__marca {
+  font-size: 12.5pt; font-weight: 800; letter-spacing: 2.4pt;
+  color: #2f5bd0; line-height: 1;
+}
+.tarjeta__descriptor {
+  font-size: 4.6pt; letter-spacing: 1.5pt; text-transform: uppercase;
+  color: #5d6779; margin-top: 1mm;
+}
+.tarjeta__linea {
+  width: 13mm; height: 0.7mm; background: #2f5bd0; border-radius: 1mm;
+  margin: 2.6mm 0 2.2mm;
+}
+.tarjeta__nombre {
+  font-size: 9.2pt; font-weight: 700; line-height: 1.2;
+  /* El nombre es lo que identifica al cliente en la puerta. Si no cabe entero
+     se recorta con puntos suspensivos, pero SIEMPRE entero: partir el nombre a
+     media palabra deja al repartidor dudando de a quién es la tarjeta. */
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.tarjeta__titular {
+  font-size: 5.6pt; color: #6b7482; margin-top: 0.6mm;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* El código va sobre la banda azul, en monoespaciada: es lo que se dicta por
+   teléfono cuando la tarjeta no escanea. */
+.tarjeta__codigo {
+  margin-top: auto;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, .16);
+  border: 0.3mm solid rgba(255, 255, 255, .55);
+  border-radius: 1.4mm;
+  padding: 0.9mm 2.2mm;
+  color: #fff;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 8.4pt; font-weight: 700; letter-spacing: 1.1pt;
+  z-index: 1;
+}
+
+.tarjeta__der { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1mm; }
+.tarjeta__qr {
+  width: 18mm; height: 18mm; background: #fff; border-radius: 1.2mm;
+  padding: 0.6mm; display: block;
+}
+.tarjeta__pie-qr {
+  font-size: 4.4pt; color: #46506a; text-align: center; line-height: 1.15;
+  text-transform: uppercase; letter-spacing: 0.35pt; font-weight: 600;
+}
+.tarjeta__tel {
+  position: absolute; top: 3.4mm; right: 4mm;
+  font-size: 5pt; color: #7a8496; z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IMPRESIÓN
+   ═══════════════════════════════════════════════════════════════════════════
+   La tarjeta se imprime en la PARTE SUPERIOR DE UN A4, no en una hoja de
+   85,6 × 54 mm. Antes la hoja era del tamaño de la tarjeta, así que cada
+   cliente gastaba un A4 entero para un plástico de tres euros y el resto
+   salía a la basura. Con la tarjeta arriba, una hoja da ocho tarjetas y los
+   retales sirven para algo.
+
+   El margen son 5 mm, que es lo que necesita una impresora normal para no
+   comerse el borde: más margen wasting papel, menos y el marco de corte se
+   pierde en la zona muerta del tambor. */
+@page tarjeta {
+  size: A4 portrait;
+  margin: 5mm;
+}
+
+@media print {
+  body:has(.tarjeta-marco) { page: tarjeta; }
+
+  body:has(.tarjeta-marco) .app,
+  body:has(.tarjeta-marco) #acceso { display: none !important; }
+
+  /* `.app` es una caja de `min-height: 100vh`. Con todo lo de dentro oculto
+     seguía ocupando una pantalla entera, y en un A4 eso es UNA HOJA EN BLANCO
+     detrás de la tarjeta. Al imprimir, la altura la manda el papel. */
+  body:has(.tarjeta-marco) .app { min-height: 0; height: auto; display: block; }
+  body:has(.tarjeta-marco) { height: auto; min-height: 0; }
+
+  /* `.capa` es un `position: fixed` con `display: grid` y `place-items: center`.
+     Anular solo el `position` no basta: la rejilla sigue centrando y el
+     diálogo sigue teniendo la altura de la ventana, así que la tarjeta salía
+     «a 397 mm de arriba» y el PDF se iba a la segunda hoja. Al imprimir, la
+     cadena entera se desenvuelve a flujo normal y la altura la manda el
+     contenido. */
+  .capa, .capa__dialogo, .capa__dialogo > *, .panel, .panel__cuerpo {
+    display: block !important;
+    height: auto !important; min-height: 0 !important; max-height: none !important;
+    overflow: visible !important;
+    place-items: initial !important;
+    align-self: start !important;
+  }
+  .capa { position: static !important; padding: 0 !important; background: none !important; }
+  .capa__dialogo {
+    max-width: none !important; box-shadow: none !important;
+    border: 0 !important; margin: 0 !important; padding: 0 !important;
+  }
+
+  /* LA FILA DE BOTONES, FUERA.
+   *
+   * Al imprimir se ocultan los botones —`.btn { display: none }`—, pero el
+   * CONTENEDOR que los sostiene se queda: una caja de doscientos milímetros
+   * de ancho y dos décimas de alto, con su filete. No se ve en la vista
+   * previa, porque ahí hay botones dentro; en el papel es una raya que sale
+   * de la tarjeta hacia la derecha. Se oculta el contenedor entero. */
+  .capa__dialogo > .pila,
+  .capa__dialogo .pila--fin,
+  .capa__acciones { display: none !important; }
+
+  /* Y el diálogo se ajusta al ancho de la TARJETA, no al de la hoja. Con
+   * `display: block` y ancho automático se estiraba a los 200 mm
+   * imprimibles, de modo que cualquier borde suyo se salía del plástico. */
+  .capa__dialogo, .panel__cuerpo, .tarjeta-lienzo { width: fit-content !important; }
+  .capa__dialogo .panel__cabecera,
+  .capa__dialogo .pista { display: none !important; }
+  .capa__dialogo .panel__cuerpo { padding: 0 !important; }
+
+  /* El margen por defecto del `body` (8px) empuja la tarjeta y, como el marco
+     mide lo mismo que la hoja útil, crea una segunda hoja EN BLANCO detrás. */
+  body:has(.tarjeta-marco) { margin: 0; padding: 0; }
+  /* Mismo motivo que en albaran.css:  de app.css
+     significa, en papel, «alto de hoja», y eso no cabe en la zona imprimible. */
+  html, body:has(.tarjeta-marco) { height: auto !important; }
+
+  /* `.tarjeta-lienzo` en pantalla CENTRA la tarjeta verticalmente con
+     `align-items: center` y un `gap` de 22px. Al imprimir, la tarjeta va ARRIBA
+     del todo: es lo que hace que quepan varias en la misma hoja. */
+  .tarjeta-lienzo {
+    background: none !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    display: block !important;
+    align-items: flex-start !important;
+  }
+  /* Las instrucciones NO salen en el plástico. Son para quien la prepara. */
+  .tarjeta-instrucciones { display: none !important; }
+
+  .tarjeta-lienzo > *:not(.tarjeta-marco):not(.tarjeta-lote) { display: none !important; }
+
+  /* El marco, en el plástico, es una línea negra fina y SÓLIDA: es la guía de
+     corte y tiene que leerse al trasluz y a contraluz. */
+  .tarjeta-marco {
+    border: 0.25mm solid #000 !important;
+    break-inside: avoid; page-break-inside: avoid;
+    break-after: avoid; page-break-after: avoid;
+  }
+  .tarjeta { box-shadow: none; }
+
+  /* app.css tiene, en su bloque de impresión, esta regla:
+   *
+   *     .panel, .tarjeta, .contenido { … padding: 0 !important }
+   *
+   * Y `.tarjeta` es la tarjeta de cliente. Con ese `!important` el relleno
+   * interior se anula al imprimir, y el plástico sale con el texto pegado al
+   * marco de corte por los cuatro lados — justo lo contrario de lo que hace
+   * falta para recortar bien. Se le devuelve su relleno. */
+  .tarjeta { padding: 3.4mm 4mm !important; }
+}
+
+/* ── Lote de tarjetas ─────────────────────────────────────────────────────
+   Tres tarjetas en un A4 horizontal (297 mm / 85,6 mm = 3,47). Con una hoja
+   de cada uno se sacaría la mitad de la mesa de trabajo. */
+.tarjeta-lote {
+  display: flex; flex-wrap: wrap; gap: 4mm; justify-content: flex-start;
+  align-items: flex-start;
+}
+.tarjeta-lote .tarjeta-marco { box-shadow: 0 2px 8px rgba(18, 26, 40, .14); }
+
+@media print {
+  .tarjeta-lienzo > .tarjeta-lote { display: flex !important; }
+  .tarjeta-lote { gap: 4mm; }
+  .tarjeta-lote .tarjeta-marco {
+    break-inside: avoid; page-break-inside: avoid;
+    break-after: avoid; page-break-after: avoid;
+  }
+}

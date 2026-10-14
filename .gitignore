@@ -1,0 +1,73 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  .gitignore DE PUBLICACIÓN
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#  Esto es lo que se sube a GitHub, no el directorio de trabajo. La diferencia
+#  importa: el directorio tiene 4,8 GB de historia de la empresa —copias de
+#  seguridad, bases de datos,roads de pruebas y una clave privada— y nada de eso
+#  va a un repositorio.
+#
+#  Lo que se SÍ sube: el código, las migraciones, la configuración del
+#  despliegue y la documentación. Con eso Render monta la aplicación y la base
+#  se crea sola en su servidor.
+#
+#  Lo que NO se sube, y por qué:
+#
+#   · Las bases de datos locales (`.pgdata*`) son el formato interno de PGlite.
+#     En Render la base es PostgreSQL de verdad, otra cosa. Subirlas añade un
+#     gigabyte y no sirve para nada.
+#
+#   · Las copias de seguridad (`respaldos/`) son los datos de la empresa: sus
+#     clientes, sus pedidos, sus cobros. En un repositorio público eso es una
+#     fuga. Las copias viven en el disco del servidor, que es donde deben.
+#
+#   · `.secreto/` tiene la clave con la que se firman las sesiones. Quien la
+#     tenga puede entrar como administrador. Ni en el disco de trabajo se versiona.
+
+# ── Bases de datos ──────────────────────────────────────────────────────────
+server/.pgdata/
+server/.pgdata*/
+.pgdata/
+.pgdata-*/
+*.pgdata/
+
+# ── Copias de seguridad: datos de la empresa, nunca en git ──────────────────
+respaldos/
+respaldos-produccion/
+restauracion-prueba/
+*.sql.gz
+backup/
+backups/
+
+# ── Secretos ────────────────────────────────────────────────────────────────
+.secreto/
+.env
+.env.*
+!.env.ejemplo
+*.pem
+*.key
+
+# ── Dependencias ────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ── Pruebas ─────────────────────────────────────────────────────────────────
+server/tests/tools/node_modules/
+.pgdata-test/
+.pgdata-test-*/
+coverage/
+
+# ── Registros y temporales ──────────────────────────────────────────────────
+registros/
+*.log
+*.tmp
+*.swp
+.DS_Store
+salida-impresion/
+tmp/
+
+# ── Sistema de versiones ────────────────────────────────────────────────────
+*.orig
+*.rej
+  · paquete de publicación

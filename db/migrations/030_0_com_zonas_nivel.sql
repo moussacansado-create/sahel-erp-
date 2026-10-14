@@ -1,0 +1,48 @@
+-- ══════════════════════════════════════════════════════════════════════════
+-- 030_0 · LA COLUMNA `nivel`, ANTES DE QUE ALGUIEN LA USE
+-- ══════════════════════════════════════════════════════════════════════════
+--
+-- EL AGUJERO
+--
+-- En una base ya construida esto nunca se notó, porque el orden real de los
+-- hechos fue otro. Pero installing de cero, las migraciones se ejecutan por
+-- orden de nombre de fichero, y sale así:
+--
+--     030_localidades.sql   ← usa com_zonas.nivel
+--     030_periodo_zona.sql
+--     031_region_zona.sql   ← CREA com_zonas.nivel
+--
+-- La 030 usa una columna que la 031 crea después. En una instalación nueva eso
+-- es un error, y el error tumba el WASM de PGlite entero: no sale un
+-- «columna no existe» limpio, sino un `Aborted()` que deja la base a medias y
+-- hace fallar TODAS las pruebas, porque las pruebas levantan su propia base.
+--
+-- ──────────────────────────────────────────────────────────────────────────
+--
+-- POR QUÉ ESTA MIGRACIÓN SE LLAMA 030_0 Y NO 042
+--
+-- Porque tiene que ejecutarse ANTES que 030_localidades.sql, y el orden es el
+-- del nombre de fichero: `030_0_...` va antes que `030_localidades.sql` porque
+-- `0` va antes que `l`.
+--
+-- No hay colisión de versiones: el migrador usa el NOMBRE COMPLETO del
+-- fichero como versión, así que `030_0_com_zonas_nivel` y `030_localidades` son
+-- dos entradas distintas y se pueden distinguir una de otra en la historia.
+--
+-- ──────────────────────────────────────────────────────────────────────────
+--
+-- POR QUÉ ES SEGURA EN LOS DOS CAMINOS
+--
+-- En una base NUEVA: crea `nivel` antes de que la 030 la necesite. La 031
+-- vuelve a pedirla y su `ADD COLUMN IF NOT EXISTS` no hace nada. Bien.
+--
+-- En una base YA CONSTRUIDA: se aplica después de la 031, la columna ya está,
+-- y `IF NOT EXISTS` la deja como estaba. No cambia nada.
+--
+-- La frase es COPIA LITERAL de la 031, incluido el `NOT NULL DEFAULT`. No es
+-- «parecido»: es la misma definición, para que la columna signifique lo mismo
+-- llegue cuando llegue. Una columna con el mismo nombre y otro tipo es peor
+-- que no tenerla.
+
+ALTER TABLE com_zonas
+  ADD COLUMN IF NOT EXISTS nivel TEXT NOT NULL DEFAULT 'REGION';

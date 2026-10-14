@@ -1,0 +1,69 @@
+# Despliegue de CleanSahel ERP en Render
+#
+# MODO DE VUELTA ATRÁS
+#
+# Este despliegue NO toca la base de trabajo. La base actual sigue en PGlite,
+# en `server/.pgdata`, y sigue atendida por el proceso de siempre. La migración
+# escribe en una base NUEVA, en el servidor. Si algo sale mal, se borra la base
+# nueva y aquí sigue todo igual. No hay forma de perder los datos actuales en
+# este procedimiento, y esa es la idea: poder repetirlo las veces que haga
+# falta hasta que salga bien.
+#
+# ── QUÉ HACE FALTA DE TI ────────────────────────────────────────────────────
+#
+#  1. Una cuenta en https://render.com con tu correo. La gratis sirve.
+#  2. Cuando te avise, crear un «Web Service» desde este repositorio, y una
+#     «PostgreSQL» desde el panel de Render (plan free, 1 GB).
+#  3. Decirme el nombre que le has puesto al Web Service.
+#
+# NO me pases contraseñas ni tarjetas por el chat. Render te las pide a ti.
+#
+# ── VARIABLES QUE NECESITA EL SERVICIO ─────────────────────────────────────
+#
+#  NODE_ENV=production
+#  JWT_SECRET=<el que está en .secreto/sahel.env>
+#  DATABASE_URL=<lo da Render al crear la PostgreSQL>
+#  DATABASE_SSL=true
+#  ADMIN_PASSWORD=<la del administrador>
+#
+# ── ORDEN DE ARRANQUE ───────────────────────────────────────────────────────
+#
+#  buildCommand:  npm install --omit=dev
+#  startCommand:  npm start   (= node server/src/index.js)
+#  healthCheckPath: /api/health
+#
+# El `npm install` va en la RAÍZ, no en `server/`: no existe un
+# `server/package.json`. Las dependencias (express, pg, argon2…) están todas en
+# el `package.json` de la raíz. Ponerlo en `server/` —que es lo primero que
+# se le ocurre a uno— falla en el despliegue con un «no such file or directory»
+# que no explica que el problema es dónde se puso el comando.
+
+
+services:
+  - type: web
+    name: sahel-erp
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false          # se escribe a mano en el panel
+      - key: ADMIN_PASSWORD
+        sync: false          # se escribe a mano en el panel
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sahel-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "true"
+
+databases:
+  - name: sahel-db
+    plan: free
+    postgresVersion: "15"
+    ipAllowList: []          # solo accesible desde dentro de Render

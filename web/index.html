@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAHEL · CleanSahel ERP</title>
+<!-- RUTAS ABSOLUTAS A PROPÓSITO. Con `href="css/app.css"`, si la página se
+     sirve desde un subdirectorio o con un `base` distinto, el navegador pide
+     `/css/app.css` y recibe el `index.html` con un 200: el CSS «carga» siendo
+     HTML y la página sale sin estilo. Con `/css/app.css` no hay ambigüedad. -->
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/albaran.css">
+<link rel="stylesheet" href="/css/tarjeta.css">
+<link rel="stylesheet" href="/css/escaner.css">
+<link rel="stylesheet" href="/css/caja.css">
+<!-- `comerciales.css` estaba ESCRITO y NO ENLAZADO desde que se creó: todo el
+     diseño de Comerciales (paneles plegables, centro de alertas, ranking,
+     historial de entradas) estaba muerto y la página salía sin estilo. Un CSS
+     que existe y no se enlaza es el peor sitio donde puede estar. -->
+<link rel="stylesheet" href="/css/comerciales.css">
+<script src="/vendor/jsQR.js" defer></script>
+<script src="/js/arranque.js"></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🧴</text></svg>">
+</head>
+<body>
+
+<!-- ── Pantalla de acceso ─────────────────────────────────────────────── -->
+<section id="acceso" class="acceso">
+    <!-- Aviso de «el JavaScript no ha cargado». Se muestra POR DEFECTO y lo
+         oculta app.js en cuanto arranca bien.
+
+         ANTES decía solo «recarga la página». Eso es un callejón sin salida:
+         si el fallo es de red, de caché o de un módulo que no existe, recargar
+         da exactamente el mismo fallo y el usuario no tiene ni una pista de qué
+         pasó ni de qué debe mirar quien lo arregla.
+
+         AHORA el mensaje lo rellena `arranque.js` con lo que pasó de verdad —el
+         fichero que falló, el error y la URL—, y ofrece reintentar. Un aviso de
+         error que no dice la causa es un rumor. -->
+    <div class="aviso-sin-js" id="sin-js">
+      <b>La aplicación no ha podido arrancar.</b>
+      <p class="aviso-sin-js__ayuda" id="sin-js-detalle">
+        Esto es un problema de conexión o de caché, no de tus datos. Puedes
+        reintentar; si sigue igual, prueba desde otra red.
+      </p>
+      <p class="aviso-sin-js__acciones">
+        <a class="btn btn--mini" href="#" id="sin-js-reintentar">Reintentar</a>
+      </p>
+      <noscript>Activa también JavaScript en el navegador.</noscript>
+    </div>
+
+  <div class="acceso__caja">
+    <div class="acceso__marca">
+      <!-- La gota de Sahel, tal cual estaba en la aplicación anterior. -->
+      <svg class="gota acceso__gota" viewBox="0 0 50 80" width="34" height="54" aria-hidden="true">
+        <defs>
+          <linearGradient id="gotaLogin" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#7dd3fc"/>
+            <stop offset="100%" stop-color="#0ea5e9"/>
+          </linearGradient>
+        </defs>
+        <path d="M25 2 Q 6 34 6 52 Q 6 72 25 72 Q 44 72 44 52 Q 44 34 25 2 Z"
+              fill="url(#gotaLogin)" stroke="#0284c7" stroke-width="1.5"/>
+        <ellipse cx="17" cy="48" rx="3.5" ry="7" fill="#fff" opacity=".55"/>
+        <circle cx="37" cy="26" r="2.4" fill="#fff" opacity=".8"/>
+      </svg>
+      <div>
+        <h1 class="acceso__titulo">SAHEL</h1>
+        <p class="acceso__lema">Produits d'hygiène</p>
+        <p class="acceso__descripcion">ERP de fábrica y distribución</p>
+      </div>
+    </div>
+
+    <form id="form-acceso" class="acceso__form" autocomplete="on">
+      <label for="usuario">Usuario</label>
+      <!-- SIN `name` a propósito. Si el JavaScript no cargara, un envío
+           nativo del formulario pondría la contraseña en la URL
+           (?username=…&password=…), y eso queda en el historial del
+           navegador y en los registros del servidor. El JavaScript lee el
+           valor por `id`, así que no hace falta `name` para nada. -->
+      <input id="usuario" type="text" autocomplete="username" required autofocus>
+
+      <label for="clave">Contraseña</label>
+      <input id="clave" type="password" autocomplete="current-password" required>
+
+      <button type="submit" class="btn btn--principal btn--ancho">Entrar</button>
+      <p id="acceso-error" class="alerta alerta--error oculto" role="alert"></p>
+    </form>
+
+    <details class="ajuste-api">
+      <summary>¿No te conecta? Ajusta la dirección de la API</summary>
+      <label for="api-url">Base de la API</label>
+      <input id="api-url" type="url" placeholder="http://localhost:10000" spellcheck="false">
+      <p class="pista">
+        Si abres esta página desde un servidor estático, la API tiene que estar
+        en otra dirección. Por defecto usa el mismo origen.
+      </p>
+      <div class="fila-botones">
+        <button type="button" id="btn-probar-api" class="btn">Probar conexión</button>
+        <button type="button" id="btn-usar-mismo-origen" class="btn btn--tenue">Usar este origen</button>
+      </div>
+      <p id="api-estado" class="pista"></p>
+    </details>
+  </div>
+</section>
+
+<!-- ── Aplicación ──────────────────────────────────────────────────────── -->
+<div id="app" class="app oculto">
+  <!-- Velo: el fondo que se oscurece al abrir el menú en un móvil. -->
+  <div id="velo" class="velo" hidden></div>
+
+  <aside class="lateral" id="lateral">
+    <div class="lateral__marca">
+      <svg class="gota" viewBox="0 0 50 80" width="20" height="32" aria-hidden="true">
+        <defs>
+          <linearGradient id="gotaMenu" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#7dd3fc"/>
+            <stop offset="100%" stop-color="#0ea5e9"/>
+          </linearGradient>
+        </defs>
+        <path d="M25 2 Q 6 34 6 52 Q 6 72 25 72 Q 44 72 44 52 Q 44 34 25 2 Z"
+              fill="url(#gotaMenu)" stroke="#0284c7" stroke-width="2"/>
+      </svg>
+      <div>
+        <div class="lateral__nombre">SAHEL</div>
+        <div class="lateral__lema">Produits d'hygiène</div>
+      </div>
+      <button id="cerrar-menu" class="menu-cerrar" type="button" aria-label="Cerrar el menú">✕</button>
+    </div>
+    <nav id="menu" class="lateral__menu"></nav>
+    <div class="lateral__pie">
+      <div id="quien-soy" class="lateral__usuario"></div>
+      <button id="btn-salir" class="btn btn--tenue btn--ancho">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="contenido">
+    <header class="barra">
+      <!-- Solo en móvil. En escritorio no hace falta: la lateral ya está a la vista. -->
+      <button id="abrir-menu" class="menu-btn" type="button"
+              aria-label="Abrir el menú" aria-controls="lateral" aria-expanded="false">☰</button>
+      <h1 id="titulo">Panel</h1>
+      <div class="barra__dercha">
+        <span id="reloj-api" class="etiqueta" title="Estado de la conexión con la API"></span>
+      </div>
+    </header>
+    <div id="vista" class="vista"></div>
+  </main>
+</div>
+
+<div id="avisos" class="avisos" aria-live="polite"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

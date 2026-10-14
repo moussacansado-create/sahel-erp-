@@ -1,0 +1,106 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ESCÁNER DE TARJETAS
+   ═══════════════════════════════════════════════════════════════════════════
+   Se usa en un móvil, con una mano, con luz de almacén y a veces con prisas.
+   Por eso la cámara es grande, el botón grande, y SIEMPRE hay un campo de
+   texto debajo: cuando la cámara no sirve, el repartidor escribe el código y
+   sigue trabajando. */
+
+.escaner { display: flex; flex-direction: column; gap: 12px; }
+
+.escaner__marco {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 46vh;
+  background: #0d1117;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ESTA LÍNEA ES LA IMPORTANTE. Sin `touch-action: none` el móvil se queda con
+   el gesto de deslizar para hacer scroll y el arrastre del encuadre no
+   funciona: la cámara «se queda pegada» mientras el repartidor la mueve. */
+.escaner__video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  touch-action: none;
+}
+
+.escaner__guia {
+  position: absolute; inset: 0;
+  /* El hueco del centro: se ve dónde poner la tarjeta sin tener que
+     interpretar un rectángulo. */
+  background:
+    linear-gradient(to right, rgba(13,17,23,.62) 0 12%, transparent 12% 88%, rgba(13,17,23,.62) 88% 100%),
+    linear-gradient(to bottom, rgba(13,17,23,.62) 0 12%, transparent 12% 88%, rgba(13,17,23,.62) 88% 100%);
+  pointer-events: none;
+  border-radius: 12px;
+}
+.escaner__guia::after {
+  content: ''; position: absolute; inset: 12%;
+  border: 2.5px solid rgba(255,255,255,.9);
+  border-radius: 10px;
+  box-shadow: 0 0 0 2000px rgba(13,17,23,.22);
+}
+
+.escaner__estado { min-height: 24px; }
+
+.escaner__pie { display: flex; gap: 8px; }
+.escaner__manual {
+  flex: 1; min-width: 0;
+  padding: 11px 12px; font-size: 15px;
+  border: 1.5px solid var(--linea-fuerte, #c8cdd6); border-radius: 9px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+/* Los 16px en el móvil: por debajo, iOS hace zoom al enfocar. */
+.escaner__manual:focus { outline: 2px solid #2f5bd0; outline-offset: 1px; }
+
+/* ── El resultado de leer una tarjeta ───────────────────────────────────── */
+.tarjeta-leida {
+  border: 1.5px solid #c9d3e2; border-left: 4px solid #2f5bd0;
+  border-radius: 10px; padding: 13px 15px; background: #f8fafd;
+}
+.tarjeta-leida h3 { margin: 0 0 2px; font-size: 17px; }
+.tarjeta-leida .codigo {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color: #2f5bd0; font-weight: 700; letter-spacing: .6px;
+}
+.tarjeta-leida__pedidos { margin-top: 11px; }
+.tarjeta-leida__pedidos li { margin-bottom: 4px; font-size: 14px; }
+.tarjeta-leida__vacia { color: #6b7482; font-size: 13.5px; }
+
+/* ── Un pedido por fila en el escáner ──────────────────────────────────────
+   Un cliente puede tener tres pedidos pendientes. Cada uno lleva SU botón, con
+   SU código a la vista: equivocarse al cerrar una entrega no se deshace, el
+   stock ya bajó y el cliente ya firmó. */
+.fila-pedido-qr {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 0; border-bottom: 1px solid #e7eaef;
+}
+.fila-pedido-qr:last-child { border-bottom: 0; }
+.fila-pedido-qr code { font-weight: 700; }
+.fila-pedido-qr .tenue { flex: 1; min-width: 90px; }
+.fila-pedido-qr .btn { margin-left: auto; }
+@media (max-width: 420px) {
+  .fila-pedido-qr .btn { margin-left: 0; width: 100%; padding: 11px 14px; }
+}
+
+/* Lo que el repartidor tiene que ver para elegir bien ────────────────────
+   Con tres pedidos del mismo cliente, un código y un estado no bastan: hay
+   que ver QUÉ lleva cada uno. */
+.fila-pedido-qr__datos {
+  display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;
+}
+.fila-pedido-qr__datos code { font-weight: 700; font-size: 13px; }
+.fila-pedido-qr__datos .pequeno {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fila-pedido-qr .btn--principal { flex-shrink: 0; }
+
+.tarjeta-leida__avisos {
+  margin-top: 10px; padding: 9px 11px;
+  background: #f4f6f9; border: 1px solid #dfe4ec; border-radius: 9px;
+  font-size: 13px; color: #4a5260;
+}
+.tarjeta-leida__avisos b { display: block; margin-bottom: 5px; font-size: 12px; }
+.tarjeta-leida__avisos li { list-style: none; margin-bottom: 2px; }

@@ -1,0 +1,276 @@
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA SESIÓN DE CAJA
+   ══════════════════════════════════════════════════════════════════════════
+   Las cifras van arriba y grandes. Es lo que la persona de caja mira antes de
+   decidir nada, y esconderlo en una tabla obligaría a buscarlo. */
+
+.caja__pestanos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.caja__intro {
+  color: var(--gris, #666);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.caja__cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.caja__cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--linea, #e2e2e2);
+  border-radius: 10px;
+  background: var(--papel, #fff);
+}
+
+.caja__cifra-titulo {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris, #666);
+}
+
+.caja__cifra-valor {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.caja__cifra-pie {
+  font-size: 0.78rem;
+  color: var(--gris, #666);
+}
+
+/* El esperado es la cifra contra la que se cuenta: se distingue sin gritar. */
+.caja__cifra--esperado {
+  border-color: var(--verde, #1a7f37);
+  background: color-mix(in srgb, var(--verde, #1a7f37) 6%, var(--papel, #fff));
+}
+
+/* Un descuadre es lo unico que aqui se pinta de rojo. */
+.caja__cifra--alerta {
+  border-color: var(--rojo, #b42318);
+  background: color-mix(in srgb, var(--rojo, #b42318) 7%, var(--papel, #fff));
+}
+
+.caja__abrir,
+.caja__mov {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: 1rem 0;
+}
+
+.caja__arqueo {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--linea, #e2e2e2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.caja__nota {
+  color: var(--gris, #666);
+  margin: 0;
+}
+
+/* Lo contado se escribe al lado de lo esperado, NUNCA antes. */
+.caja__previsto {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--verde, #1a7f37) 8%, var(--papel, #fff));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HISTORIAL DE CAJA · UNA TARJETA POR JORNADA
+
+   El estado va en el BORDE IZQUIERDO, no solo en una etiqueta de color dentro de
+   la tarjeta. Quien mira el historial de reojo tiene que ver «hubo un
+   descuadre» antes de leer un solo número. Un color en un texto pequeño se
+   pierde; una franja en el borde no.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.jornadas {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-top: 1.5rem;
+}
+
+.jornada {
+  border: 1px solid var(--linea, #e2e2e2);
+  border-left: 5px solid var(--linea, #e2e2e2);
+  border-radius: 10px;
+  background: var(--papel, #fff);
+  padding: 1.1rem 1.25rem;
+}
+
+.jornada--abierta    { border-left-color: #2f6feb; }
+.jornada--ok         { border-left-color: var(--verde, #1a7f37); }
+.jornada--pendiente  { border-left-color: #b7791f; }
+.jornada--descuadre  { border-left-color: var(--rojo, #b42318); background: color-mix(in srgb, var(--rojo, #b42318) 4%, var(--papel, #fff)); }
+
+.jornada__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--linea, #e2e2e2);
+}
+
+.jornada__fecha {
+  margin: 0;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.jornada__quien {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--gris, #666);
+}
+
+.jornada__estado {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: #eee;
+  color: #444;
+}
+
+.jornada--abierta   .jornada__estado { background: #e5efff; color: #1d4ed8; }
+.jornada--ok        .jornada__estado { background: #e4f5e9; color: #15682f; }
+.jornada--pendiente .jornada__estado { background: #fdf3d8; color: #8a5a10; }
+.jornada--descuadre .jornada__estado { background: #fde8e6; color: #9a1c13; }
+
+.jornada__bloque {
+  padding: 0.9rem 0 0.2rem;
+}
+
+.jornada__bloque--comparacion {
+  margin-top: 0.6rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--linea, #e2e2e2);
+}
+
+/* ── Cada cifra con su nombre pegado ─────────────────────────────────────── */
+.jornada__fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.35rem 0;
+}
+
+.jornada__etiqueta {
+  font-size: 0.9rem;
+  color: var(--gris, #555);
+}
+
+.jornada__valor {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.jornada__fila--fuerte .jornada__etiqueta,
+.jornada__fila--fuerte .jornada__valor {
+  font-weight: 700;
+  color: var(--tinta, #111);
+}
+
+.jornada__valor--entra { color: #15682f; }
+.jornada__valor--sale  { color: #8a4b12; }
+.jornada__valor--ok    { color: var(--verde, #1a7f37); }
+.jornada__valor--alerta {
+  color: var(--rojo, #b42318);
+  background: color-mix(in srgb, var(--rojo, #b42318) 9%, transparent);
+  padding: 0.1rem 0.45rem;
+  border-radius: 5px;
+}
+
+.jornada__leyenda,
+.jornada__subtitulo {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris, #666);
+}
+
+.jornada__pista,
+.jornada__nota {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  color: var(--gris, #666);
+  line-height: 1.45;
+}
+
+.jornada__nota {
+  font-style: italic;
+}
+
+/* ── Retiradas: un bloque aparte, NUNCA mezclado con los movimientos ──────── */
+.jornada__retiradas {
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+  background: #f7f7f5;
+  border: 1px solid var(--linea, #e2e2e2);
+}
+
+.jornada__lista {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+.jornada__retirada {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0;
+  border-bottom: 1px dotted var(--linea, #ddd);
+}
+
+.jornada__destino {
+  font-weight: 600;
+}
+
+.jornada__a-quien {
+  color: var(--gris, #666);
+  font-size: 0.88rem;
+  flex: 1;
+}
+
+.jornada__importe-retirado {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .jornada__fila { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+  .jornada__valor { font-size: 1.05rem; }
+}

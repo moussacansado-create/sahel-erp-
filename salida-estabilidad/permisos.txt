@@ -1,0 +1,7 @@
+Contabilidad: 72 permisos, fugas=ninguna, rotas=ninguna
+Administrador: 162 permisos, fugas=ninguna, rotas=ninguna
+Caja: 35 permisos, fugas=ninguna, rotas=ninguna
+Comercial: 14 permisos, fugas=ninguna, rotas=ninguna
+Entregas / Reparto: 27 permisos, fugas=ninguna, rotas=ninguna
+Jefe comercial: 58 permisos, fugas=ninguna, rotas=ninguna
+Producción: 75 permisos, fugas=ninguna, rotas=ninguna

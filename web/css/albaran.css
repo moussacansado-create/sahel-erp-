@@ -1,0 +1,386 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ALBARÁN
+   ═══════════════════════════════════════════════════════════════════════════
+   El documento se ve en la pantalla como se va a imprimir, y al imprimir sale
+   en A4: una hoja por copia, con el pie en el borde de abajo.
+
+   Lo que NO se hace aquí: maquetar «más o menos» con píxeles sueltos. Las
+   medidas del papel no dependen de lo que diga esta hoja de estilos, y por eso
+   el bloque de impresión usa centímetros y no píxeles. */
+
+.albaran { display: flex; flex-direction: column; gap: 22px; }
+
+.albaran__copia {
+  background: #fff;
+  border: 1px solid #c9cfd9;
+  border-radius: 8px;
+  padding: 22px 24px;
+  color: #14181f;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* ── Cabecera ─────────────────────────────────────────────────────────── */
+.albaran__cabecera {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 20px; padding-bottom: 14px;
+  border-bottom: 2.5px solid #2f5bd0;
+}
+.albaran__empresa h1 {
+  margin: 0; font-size: 25px; letter-spacing: 3px; font-weight: 800; color: #2f5bd0;
+}
+/* El logotipo, en milímetros: 34 mm de ancho sobre un A4 de 210 mm es un
+   membrete discreto que no se come la mitad de la cabecera. */
+.albaran__logo { display: block; width: 34mm; height: auto; }
+.albaran__descriptor {
+  font-size: 10px; letter-spacing: 2.6px; color: #5b6472; margin-top: 2px;
+  text-transform: uppercase;
+}
+.albaran__contacto { margin-top: 9px; font-size: 11.5px; color: #3d4453; }
+
+.albaran__ident { text-align: right; min-width: 200px; }
+.albaran__titulo {
+  font-size: 12px; letter-spacing: 2.2px; font-weight: 700; color: #2f5bd0;
+  text-transform: uppercase; margin-bottom: 7px;
+}
+.albaran__caja {
+  border: 1px solid #c9cfd9; border-radius: 6px; padding: 8px 11px;
+  display: inline-flex; flex-direction: column; gap: 3px; min-width: 190px;
+}
+.albaran__fila { display: flex; justify-content: space-between; gap: 16px; font-size: 12px; }
+.albaran__fila span { color: #6b7482; }
+.albaran__fila b { font-variant-numeric: tabular-nums; }
+
+/* ── Cliente ──────────────────────────────────────────────────────────── */
+.albaran__cliente { margin-top: 14px; }
+.albaran__cliente h3 {
+  margin: 0 0 6px; font-size: 9.5px; letter-spacing: 1.6px; color: #6b7482;
+  font-weight: 700; text-transform: uppercase;
+}
+.albaran__rejilla { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 14px; font-size: 12px; }
+
+/* ── Tabla ────────────────────────────────────────────────────────────── */
+.albaran__tabla { margin-top: 14px; }
+.albaran__tabla table { font-size: 12px; }
+.albaran__tabla th {
+  background: #eef1f6; font-size: 9.5px; letter-spacing: .9px; text-transform: uppercase;
+  color: #41495a; text-align: left; padding: 7px 8px; white-space: nowrap;
+}
+.albaran__tabla td { padding: 7px 8px; border-bottom: 1px solid #e7eaef; }
+.albaran__tabla .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.albaran__tabla tbody tr:nth-child(even) { background: #fafbfc; }
+
+/* ── Totales ──────────────────────────────────────────────────────────── */
+.albaran__totales { margin-top: 14px; display: flex; flex-direction: column; align-items: flex-end; }
+.albaran__total {
+  display: flex; justify-content: space-between; gap: 30px; width: 250px;
+  padding: 4px 0; font-size: 12px;
+}
+.albaran__total b { font-variant-numeric: tabular-nums; }
+.albaran__total--final {
+  width: 100%; max-width: 300px; margin-top: 4px; padding: 9px 11px;
+  background: #eef1f6; border-left: 3px solid #2f5bd0;
+  font-size: 13.5px; font-weight: 700;
+}
+
+/* ── Firmas ───────────────────────────────────────────────────────────── */
+.albaran__firmas { display: flex; gap: 26px; margin-top: 26px; }
+.albaran__firma { flex: 1; }
+.albaran__firmante {
+  display: flex; justify-content: space-between; gap: 10px;
+  margin-top: 5px; font-size: 10.5px; color: #4a5260;
+}
+
+/* ── Pie ──────────────────────────────────────────────────────────────── */
+.albaran__pie {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 20px;
+  margin-top: 20px; padding-top: 11px; border-top: 1px solid #dfe3ea;
+  font-size: 10.5px; color: #5b6472;
+}
+.albaran__gracias {
+  font-size: 12px; letter-spacing: 1.4px; font-weight: 800; color: #2f5bd0;
+  text-transform: uppercase; white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IMPRESIÓN
+   ═══════════════════════════════════════════════════════════════════════════ */
+/*
+ * Página CON NOMBRE.
+ *
+ * `@page` no se puede acotar con un selector, así que al declarar el tamaño del
+ * albarán se pisa con el de la tarjeta (que carga después) y el albarán sale
+ * impreso en un bolsillo de 85,6 × 54 mm, partido en cuatro páginas.
+ *
+ * Se resuelve nombrando la página: `@page albaran` la define, y la propiedad
+ * `page` del documento dice cuál se usa. Cada documento va al papel que le
+ * toca, sin importar el orden en que lleguen las hojas de estilo.
+ */
+@page albaran {
+  size: A4;
+  margin: 12mm 11mm;
+}
+
+@media print {
+  body:has(.albaran) { page: albaran; }
+
+  body { background: #fff; }
+
+  /* Fuera de la hoja: la aplicación entera. */
+  .lateral, .barra, .historial, .pista, .btn, .firma { display: none !important; }
+
+  /* Si hay un albarán abierto, a la hoja solo va el albarán.
+   *
+   * El criterio es `body:has(.albaran)`, NO «ocultar lo que no sea albarán».
+   * La versión segunda —`.panel:not(:has(.albaran))`— seemedó buena y fue
+   * justo lo que salió mal: un elemento no contiene un `.albaran` que sea él
+   * mismo, así que la regla terminaba ocultando el documento entero y la
+   * impresión salía en blanco. Se oculta lo de la APLICACIÓN, que es lo que
+   * hay que quitar, y se deja el modal. */
+  /* Se oculta el <main> ENTERO, no solo su contenido: ocultar `#vista` dejaba
+     el hueco de la cabecera y la impresión empezaba con una hoja en blanco. */
+  body:has(.albaran) .contenido,
+  body:has(.albaran) #acceso { display: none !important; }
+
+  /* `.app` es una caja de `min-height: 100vh`. Con todo lo de dentro oculto,
+     seguía ocupando una pantalla entera y la impresión salía con una hoja en
+     blanco DELANTE del albarán. Al imprimir, la altura la manda el papel. */
+  body:has(.albaran) .app { min-height: 0; height: auto; display: block; }
+  body:has(.albaran) { height: auto; min-height: 0; }
+
+  .capa { display: block !important; position: static !important; background: none !important;
+          padding: 0 !important; }
+  /* El margen por defecto del `body` son 8 px, o sea 2,1 mm. Sumados al
+     `min-height: 273 mm` de más abajo, el documento se iba de la hoja por DOS
+     MILÍMETROS y salían DOS PÁGINAS con un albarán de tres productos. A cero:
+     el margen que cuenta al imprimir es el de `@page`, y ya está puesto. */
+  body:has(.albaran) { margin: 0 !important; padding: 0 !important; }
+  /* `html, body { height: 100% }` viene de app.css. En pantalla, «el 100 % de
+     la ventana» es justo lo que se quiere; en papel, el 100 % es la HOJA, y
+     un cuerpo del alto de la hoja no cabe dentro de la zona imprimible: la
+     mitad de fuera se va a una segunda hoja en blanco. Por eso también el
+     `html`, que si no se queda funcionando como altura del documento. */
+  html, body:has(.albaran) { height: auto !important; }
+
+  /* El fondo gris del diálogo se colaba en la hoja. Al imprimir, el papel es
+     blanco y el gris no se imprime, pero sí ocupaba el espacio: el documento
+     acababa a 185 mm de alto sobre un área imprimible de 273 mm, y el hueco
+     era gris, no papel. */
+  .capa__dialogo, .capa__dialogo .panel__cuerpo, body, html {
+    background: #fff !important; }
+  .capa__dialogo {
+    max-width: none !important; max-height: none !important; overflow: visible !important;
+    border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;
+  }
+  /* Del modal solo interesa el documento: ni el título, ni la fila de estado,
+     ni el historial de pasos. */
+  .capa__dialogo .panel__cabecera,
+  .capa__dialogo .alerta,
+  .capa__dialogo details,
+  .capa__dialogo .pista { display: none !important; }
+  .capa__dialogo .panel__cuerpo { padding: 0 !important; }
+
+  .albaran { gap: 0; }
+  /* UNA hoja. Sin salto de página forzado entre copias: el documento es un
+     albarán, y quien quiera dos hojas lo decide en su diálogo de impresión,
+     no la aplicación. */
+  .albaran__copia { border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+
+  /* OCUPAR LA HOJA.
+   *
+   * Con tres productos el albarán mide 185 mm sobre 273 mm imprimibles: casi
+   * un tercio de la hoja en blanco, y un albarán con aire parece un albarán
+   * mal hecho. Con veinte, el mismo blanco reparte las filas y la letra
+   * engorda.
+   *
+   * `min-height` y NO `height`: la hoja se llena cuando el contenido es corto,
+   * pero si las filas no caben el documento CRECE y se sale por abajo en vez de
+   * recortar lo último. Nunca se pierde un importe por ahorrar espacio.
+   *
+   * 266 mm y no 273: el area imprimible son 273, pero pedir casi los 273 justos
+   * deja el documento pegado al borde, y el redondeo de un píxel empuja una
+   * hoja en blanco detrás. Se ceden DOS milímetros de margen, que no se ven. */
+  .albaran__copia {
+    min-height: 266mm;
+    display: flex; flex-direction: column;
+  }
+  /* NADA SE ENCOGE.
+   *
+   * En una columna flexible, un hijo que no cabe se APLANA: por defecto
+   * `flex-shrink: 1`. Con la tabla de productos, lo que pasaba era esto: al no
+   * caber todo, la tabla se encogía por debajo de su contenido y las filas
+   * desaparecían. El PDF de un albarán de 10 productos salía de UNA página
+   * limpia y sin un solo producto — el peor fallo posible, porque no se ve.
+   *
+   * Con `flex: 0 0 auto` la tabla conserva su alto: si no cabe, el documento
+   * CRECE y se va a la segunda hoja, que se ve. Perder filas en silencio no
+   * es una opción, aunque el papel quede feo. */
+  .albaran__copia > * { flex: 0 0 auto; }
+  /* La tabla, en cambio, CRECE. Se queda con el aire que sobra en vez de
+   * dejar un boquete en medio de la hoja: las filas se separan y el papel se
+   * ve maquetado, no roto. Es «1 0 auto» y no «1 1 auto» a propósito: el 0 es
+   * el shrink, y el shrink es justo lo que antes se comia las filas. */
+  /* Y esto vale para TODAS las densidades, no solo para las apretadas. Un
+   * albarán de tres productos medía 180 mm sobre 266: casi un tercio de la
+   * hoja en blanco, y un albarán con aire parece un albarán mal hecho. Que
+   * la tabla crezca lo reparte por toda la hoja. */
+  .albaran__copia .albaran__tabla { flex: 1 0 auto; }
+
+  .albaran__copia { justify-content: flex-start; }
+
+  /* CUANDO HAY MUCHAS FILAS, SE APRIETA.
+   *
+   * Medido en el PDF, no de ojo. En el ancho real del papel (188 mm) una fila
+   * normal mide 14,8 mm porque la descripción se parte en dos líneas, y el
+   * chrome de la hoja se come 165 mm: en 273 mm caben SIETE productos. Un
+   * pedido de veinte se iba a la segunda hoja, y la segunda hoja es media
+   * entrega perdida.
+   *
+   * El CSS no puede preguntar «cuántas filas hay», así que lo decide el
+   * JavaScript, que sí las cuenta antes de pintar: a partir de 9 líneas el
+   * documento se marca como denso y a partir de 18 como muy denso. Los
+   * números salen de medir el PDF, no de estimar. */
+  .albaran__copia--denso .albaran__tabla { font-size: 10.5px; }
+  .albaran__copia--denso .albaran__tabla table { table-layout: fixed; }
+  /* Con tabla de anchos fijos, la DESCRIPCIÓN se quedaba tan estrecha que
+     partia «Desinfectante 750 / ml» a media linea, con la unidad colgando
+     sola. Se le da su ancho y se le quita a las columnas de números, que
+     necesitan menos de lo que se les daba. */
+  .albaran__copia--denso .albaran__tabla th:nth-child(1),
+  .albaran__copia--muy-denso .albaran__tabla th:nth-child(1) { width: 7%; }
+  .albaran__copia--denso .albaran__tabla th:nth-child(2),
+  .albaran__copia--muy-denso .albaran__tabla th:nth-child(2) { width: 33%; }
+  .albaran__copia--denso .albaran__tabla th:nth-child(3),
+  .albaran__copia--muy-denso .albaran__tabla th:nth-child(3) { width: 15%; }
+  .albaran__copia--denso .albaran__tabla th:nth-child(4),
+  .albaran__copia--muy-denso .albaran__tabla th:nth-child(4) { width: 13%; }
+  .albaran__copia--denso .albaran__tabla th:nth-child(5),
+  .albaran__copia--muy-denso .albaran__tabla th:nth-child(5) { width: 16%; }
+  .albaran__copia--denso .albaran__tabla th:nth-child(6),
+  .albaran__copia--muy-denso .albaran__tabla th:nth-child(6) { width: 16%; }
+  .albaran__copia--denso .albaran__tabla th { padding: 3px 4px; font-size: 8.5px; }
+  .albaran__copia--denso .albaran__tabla td { padding: 2.5px 4px; }
+  .albaran__copia--denso .albaran__cabecera { padding-bottom: 7px; gap: 12px; }
+  .albaran__copia--denso .albaran__cliente,
+  .albaran__copia--denso .albaran__tabla,
+  .albaran__copia--denso .albaran__totales { margin-top: 7px; }
+  .albaran__copia--denso .albaran__rejilla { grid-template-columns: repeat(2, 1fr); font-size: 11px; }
+  .albaran__copia--denso .albaran__logo { width: 24mm; }
+  .albaran__copia--denso .albaran__contacto { font-size: 9.5px; margin-top: 4px; }
+  .albaran__copia--denso .albaran__caja { padding: 5px 8px; min-width: 150px; }
+  .albaran__copia--denso .albaran__fila { font-size: 10.5px; }
+  .albaran__copia--denso .albaran__total { padding: 2px 0; font-size: 11px; }
+  .albaran__copia--denso .albaran__total--final { padding: 6px 9px; font-size: 12px; }
+
+  /* TOTALES Y FIRMAS, EN PARALELO.
+   *
+   * Apilados se comen unos 30 mm de alto que salen de la tabla. Juntos caben
+   * en la mitad del ancho: los totales a la derecha, las firmas a la izquierda.
+   * En papel se lee igual de bien, que es lo único que importa aquí. */
+  .albaran__copia--denso .albaran__firmas {
+    display: flex; flex-direction: row-reverse; gap: 14px; align-items: flex-end;
+    margin-top: 10px;
+  }
+  .albaran__copia--denso .albaran__totales {
+    flex: 1 1 46%; margin-top: 10px; align-items: flex-start;
+  }
+  .albaran__copia--denso .albaran__total { width: 100%; }
+  .albaran__copia--denso .albaran__total--final { max-width: 100%; }
+  .albaran__copia--denso .albaran__firma { flex: 1 1 46%; }
+  .albaran__copia--denso .firma__zona { height: 14mm; }
+  .albaran__copia--denso .albaran__firmante { font-size: 9px; margin-top: 3px; }
+  .albaran__copia--denso .albaran__pie { margin-top: 9px; padding-top: 6px; font-size: 9px; }
+  .albaran__copia--denso .albaran__gracias { font-size: 10.5px; }
+
+  .albaran__copia--muy-denso .albaran__tabla { font-size: 9.5px; }
+  .albaran__copia--muy-denso .albaran__tabla th { padding: 2px 3px; font-size: 8px; }
+  .albaran__copia--muy-denso .albaran__tabla td { padding: 1.5px 3px; }
+  .albaran__copia--muy-denso .albaran__cliente,
+  .albaran__copia--muy-denso .albaran__tabla,
+  .albaran__copia--muy-denso .albaran__totales { margin-top: 5px; }
+  .albaran__copia--muy-denso .albaran__rejilla { font-size: 10px; }
+  .albaran__copia--muy-denso .albaran__logo { width: 19mm; }
+  .albaran__copia--muy-denso .albaran__contacto { font-size: 8.5px; }
+  .albaran__copia--muy-denso .albaran__descriptor { font-size: 8px; }
+  .albaran__copia--muy-denso .albaran__fila { font-size: 9.5px; }
+  .albaran__copia--muy-denso .albaran__caja { padding: 3px 6px; min-width: 130px; }
+  .albaran__copia--muy-denso .albaran__total { padding: 1px 0; font-size: 10px; }
+  .albaran__copia--muy-denso .albaran__total--final { padding: 4px 8px; font-size: 11px; }
+  .albaran__copia--muy-denso .firma__zona { height: 10mm; }
+  .albaran__copia--muy-denso .albaran__firmante { font-size: 8px; }
+  .albaran__copia--muy-denso .albaran__pie { margin-top: 6px; padding-top: 4px; font-size: 8px; }
+  .albaran__copia--muy-denso .albaran__gracias { font-size: 9.5px; }
+
+  /* Treinta productos ya no son un albarán: son un pedido grande. Aun así se
+   * intenta que entre. A partir de aquí el aire se quita de los bloques
+   * fijos —el pie entero y el descriptor—, nunca del cuerpo del texto: una
+   * cifra de 7 pt es ilegible en un almacén con luz de tubo, y un importe mal
+   * leído es peor que un papel con más hojas. */
+  .albaran__copia--muy-denso .albaran__cabecera { padding-bottom: 4px; }
+  .albaran__copia--muy-denso .albaran__descriptor { display: none; }
+  .albaran__copia--muy-denso .albaran__cliente h3 { margin-bottom: 3px; }
+  .albaran__copia--muy-denso .albaran__firmas { margin-top: 6px; gap: 10px; }
+
+  /* Con treinta productos, todas las filas YA cabían en la primera hoja: lo
+   * que se iba a la segunda eran solo el pie de condiciones y la línea de
+   * «gracias», quince milímetros. Se los recuperan de los bloques que no son
+   * información de la entrega —la caja de firmas y el pie— y no de las cifras.
+   * Un importe apretado se lee mal; una caja de firma de seis milímetros se
+   * sigue firmware con la misma facilidad. */
+  .albaran__copia--muy-denso .firma__zona { height: 6mm; }
+  .albaran__copia--muy-denso .albaran__firmante { font-size: 7.5px; margin-top: 2px; }
+  .albaran__copia--muy-denso .albaran__pie {
+    margin-top: 4px; padding-top: 3px; font-size: 7.5px; gap: 6mm;
+  }
+  .albaran__copia--muy-denso .albaran__gracias { font-size: 8.5px; }
+  .albaran__copia--muy-denso .albaran__cliente h3 { margin: 0 0 2px; font-size: 8px; }
+
+  .albaran__tabla { break-inside: auto; }
+  .albaran__tabla tr { break-inside: avoid; page-break-inside: avoid; }
+  .albaran__cabecera, .albaran__firmas, .albaran__pie {
+    break-inside: avoid; page-break-inside: avoid;
+  }
+
+  /* «¡GRACIAS POR SU CONFIANZA!» se salía por la derecha: `nowrap` sobre un
+     hueco que el texto de condiciones ya había ocupado entero. Se le da su
+     sitio fijo y el bloque de condiciones cede. */
+  .albaran__pie { align-items: flex-end; gap: 8mm; }
+  .albaran__pie > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .albaran__gracias { flex: 0 0 auto; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EN UN MÓVIL
+   ═══════════════════════════════════════════════════════════════════════════
+   El albarán es un documento de ancho FIJO por naturaleza: se imprime en A4.
+   En una pantalla de 390px hay que decidir qué encoge, y no puede ser la
+   tipografía de los importes ni las cantidades: son lo que el cliente
+   comprobará. Lo que cede es el relleno y la letra de las etiquetas. */
+@media (max-width: 760px) {
+  .albaran__copia { padding: 14px 12px; font-size: 12px; }
+
+  .albaran__cabecera { flex-direction: column; gap: 12px; }
+  .albaran__empresa h1 { font-size: 21px; letter-spacing: 2px; }
+  .albaran__ident { text-align: left; width: 100%; }
+  .albaran__caja { min-width: 0; }
+
+  .albaran__rejilla { grid-template-columns: repeat(2, 1fr); }
+
+  /* La tabla se puede desplazar, pero su ENVOLTORIA no debe empujar el
+     documento entero: sin esto el albarán se salía de la pantalla y había que
+     arrastrar hasta la última columna. */
+  /* La tabla de seis columnas no cabe en 390px. Se deja desplazar DENTRO de su
+     marco, y para que el marco no crezca con ella hay que poder encogerlo:
+     sin `min-width: 0` un bloque flexible no baja del ancho de su contenido y
+     el documento entero se salía de la pantalla. */
+  .albaran__tabla { max-width: 100%; overflow-x: auto; min-width: 0; }
+  .albaran__copia, .albaran, .albaran__tabla { min-width: 0; max-width: 100%; }
+  .albaran__tabla table { min-width: 400px; font-size: 11px; }
+  .albaran__tabla th, .albaran__tabla td { padding: 6px 4px; }
+
+  .albaran__total { width: 100%; }
+  .albaran__total--final { max-width: 100%; }
+
+  .albaran__firmas { flex-direction: column; gap: 16px; }
+  .albaran__pie { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

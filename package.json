@@ -1,0 +1,35 @@
+{
+  "name": "cleansahel-erp",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node server/src/index.js",
+    "start": "node server/src/index.js",
+    "migrate": "node server/src/db/cli-migrate.js",
+    "test": "node server/tests/nucleo.test.js",
+    "test:auth": "node server/tests/auth.test.js",
+    "test:all": "node server/tests/nucleo.test.js && node server/tests/auth.test.js",
+    "demo": "node server/arrancar.mjs",
+    "demo:datos": "node server/seed-demo.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "argon2": "^0.45.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "jsqr": "^1.4.0",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
+    "supertest": "^7.3.1"
+  },
+  "type": "module",
+  "private": true
+}
