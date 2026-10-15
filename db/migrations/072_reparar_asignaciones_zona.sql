@@ -46,18 +46,8 @@ SELECT p.id, p.home_zona_id, TRUE, 100, COALESCE(p.hired_on, CURRENT_DATE)
    -- trabajo o no hace nada.
    ON CONFLICT DO NOTHING
 
--- Y el orden de la fila: el índice de la vista `v_mapa_zona` se queda con la
--- MÁS ANTIGUA de las asignaciones principales de la zona, así que la que se
--- acaba de insertar solo cuenta si no hay ninguna anterior viva. Por eso
--- este paso va después, y es idempotente: solo toca filas que siguen
--- huérfanas de principal.
-UPDATE com_comercial_zonas c
-   SET es_principal = TRUE
- WHERE c.hasta IS NULL
-   AND c.es_principal IS NOT TRUE
-   AND NOT EXISTS (
-     SELECT 1 FROM com_comercial_zonas o
-      WHERE o.zona_id = c.zona_id
-        AND o.hasta IS NULL
-        AND o.es_principal
-        AND o.id < c.id);
+-- El segundo paso que añadí aquí (marcar como principal la fila más antigua
+-- de cada zona) se ha quitado a propósito. Podía dejar DOS principales vivos
+-- en la misma zona —el índice es único, pero un UPDATE no es un INSERT— y eso
+-- tumbaba el arranque de la aplicación. Y no hacía falta: el paso anterior ya
+-- inserta la fila con es_principal = TRUE, que es lo que la vista lee.
