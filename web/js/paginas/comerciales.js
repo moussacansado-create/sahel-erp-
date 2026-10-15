@@ -146,71 +146,6 @@ const METRICAS_ZONA = [
   { clave: 'potencial', nombre: 'Potencial (FCFA)', de: (z) => Number(z.potencial ?? 0), tipo: 'dinero' },
 ]
 
-/** Barras horizontales, ordenadas por la métrica elegida, con el nombre a la izquierda. */
-function dibujarBarras(filas, metrica) {
-  // El orden cambia con la métrica a propósito: comparar por ventas y
-  // comparar por clientes dan rankings distintos, y a veces justo eso es lo
-  // que se quería ver.
-  const datos = [...filas].sort((a, b) => metrica.de(b) - metrica.de(a))
-  const maximo = Math.max(1, ...datos.map(metrica.de))
-  const AN = 150        // ancho de la etiqueta
-  const ALTO = 34       // alto de cada fila
-  const ancho = 520
-  const alto = Math.max(ALTO, datos.length * ALTO) + 8
-
-  const s = svg('svg', {
-    viewBox: `0 0 ${ancho + AN + 90} ${alto}`,
-    class: 'grafico__svg', role: 'img',
-    'aria-label': `${metrica.nombre} por zona`,
-  })
-
-  datos.forEach((z, i) => {
-    const v = metrica.de(z)
-    const w = Math.round((v / maximo) * ancho)
-    const y = i * ALTO + 6
-
-    // La fila entera es pulsable, no solo la barra: una zona con cero tiene
-    // una barra de cero píxeles, y si solo se pulsara la barra esa zona sería
-    // inclasificable justo cuando es la que interesa.
-    const g = svg('g', {
-      class: ['grafico__fila', st.zonaId === z.id ? 'grafico__fila--activa' : ''].filter(Boolean).join(' '),
-      tabindex: '0', role: 'button',
-      'aria-label': `${z.nombre}: ${metrica.tipo === 'dinero' ? dinero(v) : v}`,
-    })
-    g.appendChild(svg('rect', { x: 0, y, width: ancho + AN, height: ALTO - 8, rx: 4, class: 'grafico__fila-fondo' }))
-
-    const etiqueta = svg('text', { x: AN - 10, y: y + 17, 'text-anchor': 'end', class: 'grafico__nombre' })
-    etiqueta.textContent = z.nombre
-    g.appendChild(etiqueta)
-
-    g.appendChild(svg('rect', {
-      x: AN, y: y + 4, width: Math.max(w, v > 0 ? 3 : 0), height: ALTO - 16, rx: 3,
-      class: ['grafico__barra', v === 0 ? 'grafico__barra--vacia' : ''].filter(Boolean).join(' '),
-    }))
-
-    // La cifra SIEMPRE a la derecha, también cuando es 0. Esconder el cero en
-    // las zonas sin datos es justo lo que este gráfico viene a arreglar.
-    const valor = svg('text', { x: AN + ancho + 8, y: y + 17, class: 'grafico__valor' })
-    valor.textContent = metrica.tipo === 'dinero' ? dinero(v) : String(v)
-    g.appendChild(valor)
-
-    g.addEventListener('click', () => {
-      st.zonaId = z.id
-      pintarMapa(); pintarZonas(); pintarPanelZona(); pintarGraficos()
-    })
-    g.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); g.dispatchEvent(new Event('click')) }
-    })
-    s.appendChild(g)
-  })
-
-  if (!datos.length) {
-    const t = svg('text', { x: AN, y: 24, class: 'grafico__nombre' })
-    t.textContent = 'No hay zonas que comparar.'
-    s.appendChild(t)
-  }
-  return s
-}
 
 // LA PANTALLA
 // ═══════════════════════════════════════════════════════════════════════════
@@ -434,6 +369,72 @@ export async function paginaComerciales(ctx) {
   }
 
   // ─── RANKING, DEBAJO ──────────────────────────────────────────────────
+  /** Barras horizontales, ordenadas por la métrica elegida, con el nombre a la izquierda. */
+  function dibujarBarras(filas, metrica) {
+    // El orden cambia con la métrica a propósito: comparar por ventas y
+    // comparar por clientes dan rankings distintos, y a veces justo eso es lo
+    // que se quería ver.
+    const datos = [...filas].sort((a, b) => metrica.de(b) - metrica.de(a))
+    const maximo = Math.max(1, ...datos.map(metrica.de))
+    const AN = 150        // ancho de la etiqueta
+    const ALTO = 34       // alto de cada fila
+    const ancho = 520
+    const alto = Math.max(ALTO, datos.length * ALTO) + 8
+
+    const s = svg('svg', {
+      viewBox: `0 0 ${ancho + AN + 90} ${alto}`,
+      class: 'grafico__svg', role: 'img',
+      'aria-label': `${metrica.nombre} por zona`,
+    })
+
+    datos.forEach((z, i) => {
+      const v = metrica.de(z)
+      const w = Math.round((v / maximo) * ancho)
+      const y = i * ALTO + 6
+
+      // La fila entera es pulsable, no solo la barra: una zona con cero tiene
+      // una barra de cero píxeles, y si solo se pulsara la barra esa zona sería
+      // inclasificable justo cuando es la que interesa.
+      const g = svg('g', {
+        class: ['grafico__fila', st.zonaId === z.id ? 'grafico__fila--activa' : ''].filter(Boolean).join(' '),
+        tabindex: '0', role: 'button',
+        'aria-label': `${z.nombre}: ${metrica.tipo === 'dinero' ? dinero(v) : v}`,
+      })
+      g.appendChild(svg('rect', { x: 0, y, width: ancho + AN, height: ALTO - 8, rx: 4, class: 'grafico__fila-fondo' }))
+
+      const etiqueta = svg('text', { x: AN - 10, y: y + 17, 'text-anchor': 'end', class: 'grafico__nombre' })
+      etiqueta.textContent = z.nombre
+      g.appendChild(etiqueta)
+
+      g.appendChild(svg('rect', {
+        x: AN, y: y + 4, width: Math.max(w, v > 0 ? 3 : 0), height: ALTO - 16, rx: 3,
+        class: ['grafico__barra', v === 0 ? 'grafico__barra--vacia' : ''].filter(Boolean).join(' '),
+      }))
+
+      // La cifra SIEMPRE a la derecha, también cuando es 0. Esconder el cero en
+      // las zonas sin datos es justo lo que este gráfico viene a arreglar.
+      const valor = svg('text', { x: AN + ancho + 8, y: y + 17, class: 'grafico__valor' })
+      valor.textContent = metrica.tipo === 'dinero' ? dinero(v) : String(v)
+      g.appendChild(valor)
+
+      g.addEventListener('click', () => {
+        st.zonaId = z.id
+        pintarMapa(); pintarZonas(); pintarPanelZona(); pintarGraficos()
+      })
+      g.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); g.dispatchEvent(new Event('click')) }
+      })
+      s.appendChild(g)
+    })
+
+    if (!datos.length) {
+      const t = svg('text', { x: AN, y: 24, class: 'grafico__nombre' })
+      t.textContent = 'No hay zonas que comparar.'
+      s.appendChild(t)
+    }
+  return s
+}
+
   // ── GRÁFICOS ─────────────────────────────────────────────────────────────
   // Se redibujan con el mismo `cargar()` que el mapa y el ranking, así que
   // cambiar el período los mueve a los tres a la vez. Sin esto se acaba
