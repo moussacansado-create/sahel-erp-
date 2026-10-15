@@ -270,3 +270,45 @@
 .tabla td { padding: .5rem .6rem; border-bottom: 1px solid #eee; vertical-align: middle; }
 .tabla tr:hover td { background: #fafbfc; }
 .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+/* ═══ GRÁFICOS POR ZONA ═══════════════════════════════════════════════════
+ * El mapa ocupa media pantalla y se lee de un vistazo; los gráficos van
+ * debajo, en vertical, porque se leen comparando y comparar en horizontal
+ * obliga a girar la cabeza. Las barras crecen a la derecha, como se lee. */
+
+.grafico { margin-top: var(--espacio, 1rem); }
+
+.grafico__controles {
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  justify-content: space-between; margin-bottom: .75rem;
+}
+.grafico__titulo { font-weight: 600; }
+.grafico__botones { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+.grafico__resumen {
+  display: flex; flex-wrap: wrap; gap: 1rem;
+  font-size: .9rem; margin-bottom: .75rem;
+  color: var(--texto-suave, #666);
+}
+
+.grafico__lienzo { overflow-x: auto; }
+.grafico__svg { width: 100%; height: auto; display: block; }
+
+.grafico__fila { cursor: pointer; }
+.grafico__fila-fondo { fill: transparent; }
+.grafico__fila:hover .grafico__fila-fondo { fill: rgba(0, 0, 0, .04); }
+.grafico__fila--activa .grafico__fila-fondo { fill: rgba(0, 120, 200, .12); }
+.grafico__fila:focus-visible { outline: 2px solid #0078c8; outline-offset: 2px; }
+
+.grafico__nombre { font-size: 13px; fill: var(--texto, #222); }
+.grafico__valor  { font-size: 12px; fill: #555; font-variant-numeric: tabular-nums; }
+
+/* La barra sin dato se ve, pero no finge que hay venta. Un gris claro, no el
+ * mismo azul: la diferencia entre «vende cero» y «no está medida» se nota. */
+.grafico__barra { fill: #0b7a3e; }
+.grafico__barra--vacia { fill: #d8d8d8; }
+
+@media (max-width: 640px) {
+  .grafico__nombre { font-size: 12px; }
+  .grafico__valor { font-size: 11px; }
+}

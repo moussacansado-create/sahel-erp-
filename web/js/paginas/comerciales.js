@@ -115,6 +115,103 @@ function dibujarMapa(zonas, selId, conEquipo, alElegir) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// GRÁFICOS POR ZONA
+// ══════════════════════════════════════════════════════════════════
+//
+// El mapa dice DÓNDE. El gráfico dice CUÁNTO, y el mapa no puede: dentro de
+// un polígono caben «vende mucho» y «vende poco» sin que se note. Estas
+// barras son las que convierten un mapa bonito en una herramienta de
+// trabajo.
+//
+// ── UNA MÉTRICA POR GRÁFICO, NUNCA DOS EN LA MISMA ESCALA ────────────────
+//
+// Es tentador juntar ventas y clientes en un mismo gráfico con dos ejes, y
+// es la forma más rápida de mentir: 2.200.000 FCFA y 5 clientes no se
+// comparan, y quien mira el dibujo se cree que sí. Aquí hay un botón por
+// métrica y solo se enseña una barra a la vez.
+//
+// ── LAS ZONAS SIN DATOS SE VEN ───────────────────────────────────────────
+//
+// Una zona con cero no se esconde. Si Norte vende y Centro no, la pregunta
+// útil es «¿es que Centro no vende o es que no tiene comercial?», y para
+// contestarla hay que ver las dos barras. Ocultar las vacías convierte «no
+// hay datos» en «no hay zonas», que no es lo mismo.
+const METRICAS_ZONA = [
+  { clave: 'importe', nombre: 'Ventas (FCFA)', de: (z) => Number(z.ventas?.importe ?? 0), tipo: 'dinero' },
+  { clave: 'pedidos', nombre: 'Pedidos', de: (z) => Number(z.ventas?.pedidos ?? 0), tipo: 'entero' },
+  { clave: 'clientes', nombre: 'Clientes activos', de: (z) => Number(z.ventas?.clientesActivos ?? 0), tipo: 'entero' },
+  { clave: 'nuevos', nombre: 'Clientes nuevos', de: (z) => Number(z.ventas?.nuevosClientes ?? 0), tipo: 'entero' },
+  { clave: 'unidades', nombre: 'Unidades vendidas', de: (z) => Number(z.ventas?.unidades ?? 0), tipo: 'entero' },
+  { clave: 'potencial', nombre: 'Potencial (FCFA)', de: (z) => Number(z.potencial ?? 0), tipo: 'dinero' },
+]
+
+/** Barras horizontales, ordenadas por la métrica elegida, con el nombre a la izquierda. */
+function dibujarBarras(filas, metrica) {
+  // El orden cambia con la métrica a propósito: comparar por ventas y
+  // comparar por clientes dan rankings distintos, y a veces justo eso es lo
+  // que se quería ver.
+  const datos = [...filas].sort((a, b) => metrica.de(b) - metrica.de(a))
+  const maximo = Math.max(1, ...datos.map(metrica.de))
+  const AN = 150        // ancho de la etiqueta
+  const ALTO = 34       // alto de cada fila
+  const ancho = 520
+  const alto = Math.max(ALTO, datos.length * ALTO) + 8
+
+  const s = svg('svg', {
+    viewBox: `0 0 ${ancho + AN + 90} ${alto}`,
+    class: 'grafico__svg', role: 'img',
+    'aria-label': `${metrica.nombre} por zona`,
+  })
+
+  datos.forEach((z, i) => {
+    const v = metrica.de(z)
+    const w = Math.round((v / maximo) * ancho)
+    const y = i * ALTO + 6
+
+    // La fila entera es pulsable, no solo la barra: una zona con cero tiene
+    // una barra de cero píxeles, y si solo se pulsara la barra esa zona sería
+    // inclasificable justo cuando es la que interesa.
+    const g = svg('g', {
+      class: ['grafico__fila', st.zonaId === z.id ? 'grafico__fila--activa' : ''].filter(Boolean).join(' '),
+      tabindex: '0', role: 'button',
+      'aria-label': `${z.nombre}: ${metrica.tipo === 'dinero' ? dinero(v) : v}`,
+    })
+    g.appendChild(svg('rect', { x: 0, y, width: ancho + AN, height: ALTO - 8, rx: 4, class: 'grafico__fila-fondo' }))
+
+    const etiqueta = svg('text', { x: AN - 10, y: y + 17, 'text-anchor': 'end', class: 'grafico__nombre' })
+    etiqueta.textContent = z.nombre
+    g.appendChild(etiqueta)
+
+    g.appendChild(svg('rect', {
+      x: AN, y: y + 4, width: Math.max(w, v > 0 ? 3 : 0), height: ALTO - 16, rx: 3,
+      class: ['grafico__barra', v === 0 ? 'grafico__barra--vacia' : ''].filter(Boolean).join(' '),
+    }))
+
+    // La cifra SIEMPRE a la derecha, también cuando es 0. Esconder el cero en
+    // las zonas sin datos es justo lo que este gráfico viene a arreglar.
+    const valor = svg('text', { x: AN + ancho + 8, y: y + 17, class: 'grafico__valor' })
+    valor.textContent = metrica.tipo === 'dinero' ? dinero(v) : String(v)
+    g.appendChild(valor)
+
+    g.addEventListener('click', () => {
+      st.zonaId = z.id
+      pintarMapa(); pintarZonas(); pintarPanelZona(); pintarGraficos()
+    })
+    g.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); g.dispatchEvent(new Event('click')) }
+    })
+    s.appendChild(g)
+  })
+
+  if (!datos.length) {
+    const t = svg('text', { x: AN, y: 24, class: 'grafico__nombre' })
+    t.textContent = 'No hay zonas que comparar.'
+    s.appendChild(t)
+  }
+  return s
+}
+
 // LA PANTALLA
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -124,7 +221,7 @@ export async function paginaComerciales(ctx) {
   raiz.appendChild(cuerpo)
 
 
-  const st = { periodo: 'MES', desde: null, hasta: null, zonaId: null }
+  const st = { periodo: 'MES', desde: null, hasta: null, zonaId: null, metrica: 'importe' }
   let sinAsignar = { clientes: 0, activos: 0 }
   let zonas = []
   let ranking = []
@@ -191,6 +288,7 @@ export async function paginaComerciales(ctx) {
     pintarZonas()
     if (st.zonaId) await pintarPanelZona()
     pintarRanking()
+    pintarGraficos()
   }
 
   function pintarMapa() {
@@ -336,6 +434,42 @@ export async function paginaComerciales(ctx) {
   }
 
   // ─── RANKING, DEBAJO ──────────────────────────────────────────────────
+  // ── GRÁFICOS ─────────────────────────────────────────────────────────────
+  // Se redibujan con el mismo `cargar()` que el mapa y el ranking, así que
+  // cambiar el período los mueve a los tres a la vez. Sin esto se acaba
+  // viendo «el mapa es de este mes» junto a «las barras son del anterior».
+  const cajaGraficos = el('div', { class: 'grafico' })
+
+  function pintarGraficos() {
+    // Solo las zonas que están bajo Bamako, que es lo que un comercial de
+    // Bamako puede comparar. Comparar Gao con Kidal no sirve para decidir
+    // nada, y mete en el gráfico regiones que nadie está trabajando.
+    const lista = zonas.filter((z) => z.id !== 1 && z.kind !== 'REGION' && z.nivel !== 'REGION')
+    const meta = METRICAS_ZONA.find((m) => m.clave === st.metrica) || METRICAS_ZONA[0]
+
+    const conDatos = lista.filter((z) => meta.de(z) > 0)
+    const sinNada = lista.filter((z) => meta.de(z) === 0)
+    const top = conDatos[0]
+
+    cajaGraficos.replaceChildren(
+      el('div', { class: 'grafico__controles' }, [
+        el('span', { class: 'grafico__titulo', text: 'Rendimiento por zona' }),
+        el('div', { class: 'grafico__botones' }, METRICAS_ZONA.map((m) => boton(
+          m.nombre, () => { st.metrica = m.clave; pintarGraficos() },
+          'btn btn--mini' + (m.clave === meta.clave ? ' btn--principal' : '')))),
+      ]),
+      el('div', { class: 'grafico__resumen' }, [
+        el('span', {}, [el('strong', { text: 'Mejor: ' }),
+          el('span', { text: top ? `${top.nombre} · ${meta.tipo === 'dinero' ? dinero(meta.de(top)) : meta.de(top)}` : '—' })]),
+        el('span', {}, [el('strong', { text: 'Zonas sin actividad: ' }),
+          el('span', { text: String(sinNada.length) }),
+          sinNada.length ? el('span', { class: 'tenue', text: ` (${sinNada.map((z) => z.nombre).join(', ')})` }) : null]),
+      ].filter(Boolean)),
+      el('div', { class: 'grafico__lienzo' }, [dibujarBarras(lista, meta)]),
+      el('p', { class: 'pista', text: 'Pulsa una barra para marcar esa zona en el mapa.' }),
+    )
+  }
+
   function pintarRanking() {
     if (!ranking.length) { cajaRanking.replaceChildren(vacio('Ninguno todavía.')); return }
     cajaRanking.replaceChildren(
@@ -1316,6 +1450,7 @@ export async function paginaComerciales(ctx) {
         leyenda('', 'Sin asignar'),
         leyenda('mapa__zona--activa', 'Seleccionada'),
       ])]),
+      cajaGraficos(),
       // El mapa se ve al entrar. Las zonas, sus localidades y los controles de
       // asignar se esconden detras de un boton: ocupan media pantalla y no
       // hacen falta para VER el mapa, que es para lo que se viene.
