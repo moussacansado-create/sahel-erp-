@@ -1451,6 +1451,7 @@ export async function paginaComerciales(ctx) {
         leyenda('', 'Sin asignar'),
         leyenda('mapa__zona--activa', 'Seleccionada'),
       ])]),
+      cajaGraficos,
       // El mapa se ve al entrar. Las zonas, sus localidades y los controles de
       // asignar se esconden detras de un boton: ocupan media pantalla y no
       // hacen falta para VER el mapa, que es para lo que se viene.

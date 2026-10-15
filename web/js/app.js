@@ -269,10 +269,17 @@ async function navegar() {
     vista.replaceChildren(contenido)
     vista.scrollTop = 0
   } catch (e) {
+    // Sin esto, una pantalla que falla al montarse se queda en blanco y no
+    // deja ni una pista de por qué. Antes solo se veía el mensaje en la
+    // pantalla, y si el fallo estaba en construir la vista —no al pintar— no
+    // llegaba aTiempo de enseñarse. Con el stack en la consola, el fallo se
+    // puede localizar sin tener que reproducirlo a ojo.
+    console.error(`[montaje] ${definicion.ruta}: ${e && e.message}`, e && e.stack)
     if (mio !== tokenNavegacion) return
     vista.replaceChildren(el('div', { class: 'panel' }, [el('div', { class: 'panel__cuerpo' }, [
       el('div', { class: 'alerta alerta--error', text: e.message }),
       el('p', { class: 'pista', text: 'Si es un 403, tu usuario no tiene permiso para esta pantalla.' }),
+      el('p', { class: 'pista', text: 'El detalle está en la consola del navegador.' }),
     ])]))
   }
 }
