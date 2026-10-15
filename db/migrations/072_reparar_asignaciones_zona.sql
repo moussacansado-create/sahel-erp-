@@ -40,6 +40,11 @@ SELECT p.id, p.home_zona_id, TRUE, 100, COALESCE(p.hired_on, CURRENT_DATE)
       WHERE o.zona_id = p.home_zona_id
         AND o.hasta IS NULL
         AND o.es_principal);
+   -- ON CONFLICT DO NOTHING sin objetivo cubre CUALQUIER indice unico, incluido
+   -- uniq_zona_responsable. Con la guarda de arriba ya no deberia saltar, pero
+   -- una migracion que puede tumbar el arranque no deberia existir: esta hace su
+   -- trabajo o no hace nada.
+   ON CONFLICT DO NOTHING
 
 -- Y el orden de la fila: el índice de la vista `v_mapa_zona` se queda con la
 -- MÁS ANTIGUA de las asignaciones principales de la zona, así que la que se
