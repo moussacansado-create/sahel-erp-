@@ -35,8 +35,17 @@ async function arrancar() {
   // y `index.js` comparten `db/client.js`; cargarlo en el grafo de imports lo
   // deja a medio inicializar, y el arranque falla con «schema_migrations does
   // not exist», un error que no dice absolutamente nada del problema real.
-  const { instalarBase } = await import('./db/instalar.js')
+  const { instalarBase, realinearSecuencias } = await import('./db/instalar.js')
   await instalarBase({ silencioso: true })
+  // Antes de que inserte nadie. Una secuencia desfasada hace que cada alta
+  // reviente con un 409 «Ya existe un registro con esos datos» que no dice
+  // la verdad: no hay duplicado, el contador simplemente va por detrás.
+  try {
+    const seqs = await realinearSecuencias()
+    console.log(`▸ ${seqs} secuencias realineadas`)
+  } catch (e) {
+    console.log(`▸ no se pudieron realinear las secuencias: ${e.message}`)
+  }
 
   console.log('▸ verificando datos del sistema…')
   await sembrar()
