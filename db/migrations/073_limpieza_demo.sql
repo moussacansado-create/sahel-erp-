@@ -48,9 +48,13 @@ DELETE FROM order_reservations WHERE sales_order_id IN (SELECT id FROM sales_ord
 DELETE FROM sales_order_lines WHERE sales_order_id IN (SELECT id FROM sales_orders);
 DELETE FROM sales_orders;
 
--- 5 · Movimientos de stock de las entregas, si los hubiera.
-DELETE FROM stock_movements WHERE delivery_id IS NOT NULL
-   AND delivery_id NOT IN (SELECT id FROM deliveries);
+-- 5 · Movimientos de stock. NO se borran.
+--
+-- Se很容易 sagen «los movimientos son de prueba y se van», pero un movimiento
+-- de stock es la evidencia de que una cantidad entró o salió del almacén. Sin
+-- él, el saldo de un lote deja de cuadrar con su historia. Se conservan
+-- todos; lo que se limpia son los PEDIDOS, no la trazabilidad del almacén.
+-- (Esta tabla no tiene delivery_id: se dejó así a propósito.)
 
 -- 6 · Por último, los clientes. Cuando se llega aquí ya no tienen pedidos,
 --    entregas ni cobros colgando: es la prueba de que el orden era el
