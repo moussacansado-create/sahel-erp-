@@ -772,13 +772,30 @@ export async function ranking({ desde, hasta } = {}) {
   //
   // Los datos de quién es cada uno salen de `com_perfiles`, que es la lista
   // viva. La foto solo se queda como registro histórico.
-
+  //
+  // LA ZONA SE LEE DE `com_comercial_zonas`, NO DE `home_zona_id`.
+  //
+  // Esto estaba mal y por eso el ranking decía que un comercial no tenía
+  // ninguna zona después de habérsela asignado. `home_zona_id` es lo que se
+  // marca en el MAPA, no la lista de zonas del comercial: un comercial puede
+  // llevar tres zonas y tener `home_zona_id` a NULL si no se marcó ninguna
+  // como principal, y entonces el ranking lo pintaba sin zona. La escritura
+  // ya guardaba bien en `com_comercial_zonas`; lo que no leía era de ahí.
+  //
+  // Se lee también `home_zona_id` como respaldo, y por orden: primero la
+  // principal, después las demás. Así el ranking enseña la zona que el
+  // comercial considera suya arriba, sin perder el resto.
   const filas = await query(
     `SELECT cp.id AS comercial_id, cp.user_id, u.username, u.full_name, cp.is_active,
-            cp.home_zona_id, z.name AS zona
+            cp.home_zona_id,
+            hm.name AS zona_principal,
+            (SELECT string_agg(z.name, ' · ' ORDER BY cz.es_principal DESC, z.name)
+               FROM com_comercial_zonas cz
+               JOIN com_zonas z ON z.id = cz.zona_id
+              WHERE cz.comercial_id = cp.id) AS zonas
        FROM com_perfiles cp
        JOIN users u ON u.id = cp.user_id
-       LEFT JOIN com_zonas z ON z.id = cp.home_zona_id
+       LEFT JOIN com_zonas hm ON hm.id = cp.home_zona_id
       WHERE cp.is_active
       ORDER BY u.full_name`)
 
@@ -805,7 +822,11 @@ export async function ranking({ desde, hasta } = {}) {
       userId: f.user_id,
       username: f.username,
       nombre: f.full_name,
-      zona: f.zona,
+      // `zona` es la que se enseña y la que se usaba para agrupar: primero la
+      // principal declarada, y si no hay ninguna marcada, la lista de
+      // `com_comercial_zonas`. Antes se leía solo `home_zona_id` y por eso un
+      // comercial con zonas guardadas salía sin zona en el ranking.
+      zona: f.zonas || f.zona_principal || null,
       puesto: 0,
       tieneObjetivo: !!o,
       objetivo,
