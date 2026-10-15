@@ -39,12 +39,12 @@ SELECT p.id, p.home_zona_id, TRUE, 100, COALESCE(p.hired_on, CURRENT_DATE)
      SELECT 1 FROM com_comercial_zonas o
       WHERE o.zona_id = p.home_zona_id
         AND o.hasta IS NULL
-        AND o.es_principal);
+        AND o.es_principal)
    -- ON CONFLICT DO NOTHING sin objetivo cubre CUALQUIER indice unico, incluido
    -- uniq_zona_responsable. Con la guarda de arriba ya no deberia saltar, pero
    -- una migracion que puede tumbar el arranque no deberia existir: esta hace su
    -- trabajo o no hace nada.
-   ON CONFLICT DO NOTHING
+   ON CONFLICT DO NOTHING;
 
 -- El segundo paso que añadí aquí (marcar como principal la fila más antigua
 -- de cada zona) se ha quitado a propósito. Podía dejar DOS principales vivos
