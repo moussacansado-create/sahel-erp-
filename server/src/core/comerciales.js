@@ -436,6 +436,48 @@ export async function asignarZona(comercialId, zonaId, usuarioId = null) {
       'UPDATE com_perfiles SET home_zona_id = $2, updated_at = now() WHERE id = $1 RETURNING *',
       [comercialId, zonaId],
     )
+
+    // ── Y AHORA, DONDE IMPORTA DE VERDAD ───────────────────────────────────
+    //
+    // Antes esta función se quedaba en el `UPDATE` de arriba y devolvía «hecho».
+    // Pero `home_zona_id` es la referencia del MAPA, no la lista de zonas del
+    // comercial: la fuente de verdad es `com_comercial_zonas`, y es la que leen
+    // `v_mapa_zona` (para dibujar el responsable), el ranking y las carteras.
+    //
+    // Por eso asignar por aquí dejaba al comercial invisible en el mapa:
+    // añadía su nombre en un sitio que nadie mira y no escribía en el que sí.
+    // Se cerraba la asignación anterior con `hasta` —así se conserva el
+    // histórico en vez de perderlo— y se abre la nueva como principal.
+    //
+    // Primero se cierra CUALQUIER otro principal de esa zona. El índice
+    // `uniq_zona_responsable` no admite dos principales vivos, y asignar una
+    // zona que ya tiene dueño tiene que ser un cambio de dueño, no un error.
+    await tx.query(
+      `UPDATE com_comercial_zonas SET hasta = CURRENT_DATE
+        WHERE zona_id = $1 AND comercial_id <> $2 AND hasta IS NULL`,
+      [zonaId, comercialId],
+    )
+    // Y el comercial suelta las zonas que tenía, que tampoco se pueden quedar
+    // colgadas: que ceja de ser responsable de Norte al pasar a Centro.
+    await tx.query(
+      `UPDATE com_comercial_zonas SET hasta = CURRENT_DATE
+        WHERE comercial_id = $1 AND zona_id <> $2 AND hasta IS NULL`,
+      [comercialId, zonaId],
+    )
+    const yaTieneEsta = await tx.one(
+      `SELECT id FROM com_comercial_zonas
+        WHERE comercial_id = $1 AND zona_id = $2 AND hasta IS NULL`, [comercialId, zonaId],
+    )
+    if (yaTieneEsta) {
+      await tx.query('UPDATE com_comercial_zonas SET es_principal = TRUE WHERE id = $1', [yaTieneEsta.id])
+    } else {
+      await tx.query(
+        `INSERT INTO com_comercial_zonas (comercial_id, zona_id, es_principal, porcentaje, desde)
+         VALUES ($1, $2, TRUE, 100, CURRENT_DATE)`,
+        [comercialId, zonaId],
+      )
+    }
+
     await registrar(tx, {
       usuarioId, accion: 'com.zona_asignada', entidad: 'com_perfiles', entidadId: comercialId,
       datos: { zonaId },
