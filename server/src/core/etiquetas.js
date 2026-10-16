@@ -238,6 +238,11 @@ export async function datosDeEntrada(loteId) {
     caducidad: f.expiry_date,
     fabricanteEn: f.manufactured_at,
     proveedor: f.proveedor || null,
+    // LAS DOS CARAS y las PRESENTACIONES del producto. Sin copiar aquí, la
+    // consulta las trae pero este objeto —que se construye campo a campo— las
+    // deja fuera, y la etiqueta sale sin trasera o directamente revienta.
+    caras: Array.isArray(f.caras) ? f.caras : [],
+    presentaciones: f.presentaciones || null,
     albaran: f.invoice_ref || null,
     estado: f.status,
     unitCost: f.unit_cost,
