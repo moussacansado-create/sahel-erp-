@@ -130,6 +130,15 @@ try {
   // ── 6 · TRAS RECARGAR, LA ASIGNACIÓN SIGUE AHÍ ──────────────────────────
   await p.reload({ waitUntil: 'networkidle2' })
   await pausa(7000)
+  // Tras recargar NO hay zona seleccionada: el panel sale vacio y no se puede
+  // mirar nada. Se vuelve a pulsar la zona, que es lo que haria una persona, y
+  // solo entonces se comprueba si lo guardado sigue ahi.
+  await p.evaluate((nom) => {
+    const b = [...document.querySelectorAll('.zonas__rejilla button')]
+      .find((x) => x.textContent.includes(nom))
+    if (b) b.click()
+  }, 'Bamako Centro')
+  await pausa(3500)
   const persistido = await p.evaluate((id) => {
     const pn = document.querySelector('.panel-zona, #panel-zona, [data-panel-zona]')
     const sel = pn?.querySelector('select')

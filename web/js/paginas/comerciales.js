@@ -94,7 +94,8 @@ function dibujarMapa(zonas, selId, conEquipo, alElegir, op = {}) {
     'aria-label': op.aria || 'Mapa de las nueve regiones de Mali',
   })
 
-  for (const z of [...zonas].sort((a, b) => (a.id === selId ? 1 : b.id === selId ? -1 : 0))) {
+  for (const z of [...zonas].sort((a, b) => (a.id === selId ? 1 : b.id === selId ? -1 : 0))
+    .map((z) => ({ ...z, esPadre: !!(op.sinRotuloPadre && z.id === 1) }))) {
     const p = (z.poligono ?? []).map(proy)
     if (!p.length) continue
     const path = svg('path', {
@@ -125,8 +126,15 @@ function dibujarMapa(zonas, selId, conEquipo, alElegir, op = {}) {
       x: cx, y: cy + alto2, class: `mapa__etiqueta ${op.etiquetaAlto ? 'mapa__etiqueta--recuadro' : ''}`,
       'text-anchor': 'middle', 'pointer-events': 'none',
     })
-    txt.textContent = z.nombre
-    s.appendChild(txt)
+    // En el recuadro, el distrito (Bamako) NO lleva rotulo: sus cinco zonas
+    // los llevan, y el titulo del recuadro ya dice «Distrito de Bamako». Con el
+    // rotulo del distrito encima, su etiqueta caia sobre las de «Bamako Este»
+    // y «Bamako Centro» y las tapaba. El distrito se sigue viendo: es el
+    // contorno que las rodea.
+    if (!op.sinRotuloPadre || !z.esPadre) {
+      txt.textContent = z.nombre
+      s.appendChild(txt)
+    }
   }
   return s
 }
@@ -170,6 +178,7 @@ function dibujarRecuadroBamako(zonas, selId, conEquipo, alElegir) {
       lim: RECUADRO_BKO, ancho, alto,
       clase: 'mapa__svg--recuadro',
       etiquetaAlto: true,
+      sinRotuloPadre: true,
       aria: 'Ampliación del distrito de Bamako con sus zonas',
     }),
   ])
