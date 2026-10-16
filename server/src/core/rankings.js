@@ -209,6 +209,29 @@ export const METRICAS = {
     alias: 'OBJETIVO_CUMPLIDO',
     explica: 'Un punto por cada punto porcentual del objetivo alcanzado.',
   },
+  // «Cliente nuevo» y «Clientes distintos» son LA MISMA cuenta contada de dos
+  // maneras, y el cálculo solo knew una.
+  //
+  // El configurador de reglas (052) deja elegir la métrica de entre las que
+  // ofrece la lista, y una de ellas es `CLIENTE_NUEVO`. Aquí solo estaba
+  // `DISTINCT_CUSTOMERS`. Una métrica que el calculador no conoce no entra
+  // ni por la rama de los hechos ni por la del contador: la regla se guarda,
+  // se ve en Ajustes, y no puntúa NADA. Por eso un comercial con tres
+  // clientes de octubre tenía cero puntos y cero clientes distintos.
+  //
+  // La misma consulta para las dos: una fila por cliente, y el indice unico
+  // `uniq_com_puntos_evento` (comercial, regla, tipo_ref, ref_id) hace que
+  // recalcular el ranking no duplique ni un punto.
+  CLIENTE_NUEVO: {
+    nombre: 'Clientes nuevos', familia: 'Clientes', modo: 'UNIDAD',
+    explica: 'Un punto por cada cliente dado de alta en el periodo. Cada uno suma una vez, se edite lo que se edite.',
+    sql: `SELECT c.comercial_id AS comercial, c.id AS ref,
+                 'Cliente ' || c.code AS motivo
+            FROM customers c
+           WHERE c.comercial_id IS NOT NULL
+             AND ($1::int IS NULL OR c.comercial_id = $1::int)
+             AND c.created_at::date BETWEEN $2 AND $3`,
+  },
   ORDERS: { nombre: 'Pedidos cerrados', familia: 'Pedidos y entregas', modo: 'UNIDAD', alias: 'PEDIDO_VALIDO' },
   VISITS: { nombre: 'Visitas hechas', familia: 'Visitas y actividad', modo: 'UNIDAD', alias: 'VISITA_REALIZADA' },
 }
