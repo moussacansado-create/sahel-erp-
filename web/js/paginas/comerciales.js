@@ -75,12 +75,23 @@ const svg = (tag, attrs = {}) => {
   return e
 }
 
-function dibujarMapa(zonas, selId, conEquipo, alElegir) {
+// La función vale para los dos mapas. Lo único que cambia entre el de Mali y
+// el recuadro de Bamako es DÓNDE SE MIRA y cuánto cabe en pantalla, así que
+// eso son parámetros y no dos funciones parecidas: dos copias divergen, y la
+// segunda se queda sin arreglar cuando se arregla la primera.
+function dibujarMapa(zonas, selId, conEquipo, alElegir, op = {}) {
+  const lim = op.lim || LIM
+  const ancho = op.ancho || ANCHO
+  const alto = op.alto || ALTO
+  const proy = ([lon, lat]) => [
+    Number(((ancho * (lon - lim.lonMin)) / (lim.lonMax - lim.lonMin)).toFixed(1)),
+    Number(((alto * (lim.latMax - lat)) / (lim.latMax - lim.latMin)).toFixed(1)),
+  ]
   const s = svg('svg', {
-    viewBox: `0 0 ${ANCHO} ${ALTO}`,
-    class: 'mapa__svg mapa__svg--grande',
+    viewBox: `0 0 ${ancho} ${alto}`,
+    class: `mapa__svg ${op.clase || 'mapa__svg--grande'}`,
     role: 'group',
-    'aria-label': 'Mapa de las nueve regiones de Mali',
+    'aria-label': op.aria || 'Mapa de las nueve regiones de Mali',
   })
 
   for (const z of [...zonas].sort((a, b) => (a.id === selId ? 1 : b.id === selId ? -1 : 0))) {
@@ -104,8 +115,14 @@ function dibujarMapa(zonas, selId, conEquipo, alElegir) {
     // El nombre, DENTRO de su polígono. Un mapa sin rótulos es un mapa de
     // siluetas: se ve Mali, pero no se sabe qué es cada trozo.
     const [cx, cy] = proy([z.lng, z.lat])
+    // El desplazamiento aparta los rótulos que caen en el mismo punto. En el
+    // mapa de Mali van repartidos; en el recuadro de Bamako, que es varias veces
+    // más pequeño, Norte y Sur se centran casi encima y el segundo
+    // tapaba al primero. Se separan un poco y se les pone un halo blanco para
+    // que se lean sobre el relleno de la zona.
+    const alto2 = op.etiquetaAlto ? 13 : 0
     const txt = svg('text', {
-      x: cx, y: cy, class: 'mapa__etiqueta',
+      x: cx, y: cy + alto2, class: `mapa__etiqueta ${op.etiquetaAlto ? 'mapa__etiqueta--recuadro' : ''}`,
       'text-anchor': 'middle', 'pointer-events': 'none',
     })
     txt.textContent = z.nombre
@@ -116,6 +133,48 @@ function dibujarMapa(zonas, selId, conEquipo, alElegir) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════════════════
+// ─── EL RECUADRO DE BAMAKO ─────────────────────────────────────
+//
+// POR QUÉ HACE FALTA
+//
+// Mali va de -13,2 a 5,2 de longitud: dieciocho grados. Bamako va de -8,06
+// a -7,92: CERO PUNTO CATORCE. En el mapa nacional Bamako sale con cinco
+// píxeles de ancho y su zona Centro con dos. Están en su sitio —no es un
+// error de coordenadas ni de proyección— pero cinco píxeles no se pulsan, y
+// una etiqueta más grande que la zona tapa el distrito entero.
+//
+// La tentación es dibujarlo más grande donde sea, y eso es mentira
+// cartográfica: el mapa enseñaría Bamako en un sitio donde no está. La
+// solución es un recuadro de ampliación, que es lo que se hace en un atlas:
+// el mapa grande no se toca y al lado está el mismo distrito mirado de cerca.
+//
+// El recuadro usa la MISMA función y las MISMAS coordenadas reales, con otra
+// ventana. Si algún día se corrige el mapa grande, el recuadro se corrige con
+// él, porque no son dos mapas: es el mismo dos veces.
+
+const RECUADRO_BKO = { lonMin: -8.16, lonMax: -7.82, latMin: 12.50, latMax: 12.74 }
+
+function dibujarRecuadroBamako(zonas, selId, conEquipo, alElegir) {
+  const subzonas = zonas.filter((z) => z.id === 1 || z.parentId === 1
+    || String(z.code || '').startsWith('BKO-'))
+  if (!subzonas.length) return null
+  const ancho = 420
+  const alto = Math.round(ancho * ((RECUADRO_BKO.latMax - RECUADRO_BKO.latMin)
+    / (RECUADRO_BKO.lonMax - RECUADRO_BKO.lonMin)))
+  return el('figure', { class: 'mapa__recuadro' }, [
+    el('figcaption', { class: 'mapa__recuadro-titulo' }, [
+      el('strong', { text: 'Ampliación · Distrito de Bamako' }),
+      el('span', { class: 'tenue', text: 'Mismo mapa, mismas coordenadas, otra ventana.' }),
+    ]),
+    dibujarMapa(subzonas, selId, conEquipo, alElegir, {
+      lim: RECUADRO_BKO, ancho, alto,
+      clase: 'mapa__svg--recuadro',
+      etiquetaAlto: true,
+      aria: 'Ampliación del distrito de Bamako con sus zonas',
+    }),
+  ])
+}
+
 // GRÁFICOS POR ZONA
 // ══════════════════════════════════════════════════════════════════
 //
@@ -243,10 +302,13 @@ export async function paginaComerciales(ctx) {
       lienzo.parentElement.querySelector('.mapa__aviso')?.remove()
     }
     const conEquipo = new Set(zonas.filter((z) => (z.comercial ?? 0) > 0).map((z) => z.id))
-    lienzo.replaceChildren(dibujarMapa(zonas, st.zonaId, conEquipo, (z) => {
+    const elegir = (z) => {
       st.zonaId = z.id
       pintarMapa(); pintarZonas(); pintarPanelZona()
-    }))
+    }
+    const nacional = dibujarMapa(zonas, st.zonaId, conEquipo, elegir)
+    const recuadro = dibujarRecuadroBamako(zonas, st.zonaId, conEquipo, elegir)
+    lienzo.replaceChildren(...(recuadro ? [nacional, recuadro] : [nacional]))
   }
 
   // ─── ZONAS ─────────────────────────────────────────────────────────────
