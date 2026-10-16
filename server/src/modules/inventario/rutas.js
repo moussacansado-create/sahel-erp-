@@ -23,7 +23,7 @@ import {
 } from '../../core/inventario.js'
 import {
   FORMATOS, formatoValido, datosDeEntrada, imagenQr, resolverQr, registrarImpresion,
-  impresionesDe, rotarToken, trazabilidad, listarEntradas,
+  impresionesDe, rotarToken, trazabilidad, listarEntradas, resolverCaras, faltaDeUnaCara,
 } from '../../core/etiquetas.js'
 import { htmlEtiqueta, catalogoFormatos } from '../../core/etiqueta-html.js'
 import { idempotente } from '../../http/idempotencia.js'
@@ -277,13 +277,68 @@ router.post('/inventory/reservas/:id/liberar', auth, editarInventario, asincrono
 // Y lo que NO hace ninguna de estas rutas: tocar stock, costes o movimientos.
 // `/imprimir` solo escribe en `lot_etiquetas`, que es una bitácora.
 
-/** La etiqueta imprimible en HTML, medida en milímetros. */
+/**
+ * La etiqueta imprimible en HTML, medida en milímetros.
+ *
+ * `?cara=DELANTERA` (por defecto), `?cara=TRASERA` o `?cara=LAS_DOS`.
+ *
+ * La TRASERA no se imprime si le falta el modo de uso, la composición o la
+ * dosificación. No es un aviso: es que una etiqueta trasera en blanco dice
+ * «este producto se usa como quieras» y quien la compre se lo cree. Se
+ * devuelve 422 con el motivo y no sale nada por la impresora.
+ */
 router.get('/inventory/lotes/:id/etiqueta', auth, permisoRecepcion, asincrono(async (req, res) => {
   const fmt = formatoValido(req.query.formato) || '60x40'
   const datos = await datosDeEntrada(req.params.id)
   if (!datos) return res.status(404).json({ error: 'Esa entrada no existe.', codigo: 'NO_ENCONTRADO' })
   const copias = req.query.copias ? Math.min(200, Math.max(1, Number(req.query.copias) || 1)) : 1
-  res.type('html').send(htmlEtiqueta(datos, fmt,copias))
+
+  const pedida = (req.query.cara || 'DELANTERA').toUpperCase()
+  if (!['DELANTERA', 'TRASERA', 'LAS_DOS', 'AMBAS', 'TODAS'].includes(pedida)) {
+    return res.status(400).json({
+      error: `Cara desconocida: «${req.query.cara}». Vale DELANTERA, TRASERA o LAS_DOS.`,
+      codigo: 'CARA_INVALIDA',
+    })
+  }
+
+  // Sin `cara` en la URL se comporta como antes —una sola etiqueta— para que
+  // lo que ya imprimía este sistema siga imprimiendo igual.
+  if (req.query.cara) {
+    const r = resolverCaras(datos.caras, pedida)
+    if (!r.ok) {
+      return res.status(422).json({ error: r.motivo, codigo: 'ETIQUETA_INCOMPLETA' })
+    }
+    return res.type('html').send(htmlEtiqueta(datos, fmt, copias, r.caras))
+  }
+
+  res.type('html').send(htmlEtiqueta(datos, fmt, copias))
+}))
+
+/**
+ * Las caras de la etiqueta de un lote, y si se pueden imprimir.
+ *
+ * Es lo que llama la vista previa ANTES de mandar a imprimir: enseña qué
+ * cara falta y por qué, en vez de sacar la impresora y descubrirlo allí.
+ */
+router.get('/inventory/lotes/:id/etiqueta/caras', auth, verInventario, asincrono(async (req, res) => {
+  const datos = await datosDeEntrada(req.params.id)
+  if (!datos) return res.status(404).json({ error: 'Ese lote no existe.', codigo: 'NO_ENCONTRADO' })
+  const lista = Array.isArray(datos.caras) ? datos.caras : []
+  const campos = ['modo_uso', 'composicion', 'dosificacion', 'lote_ingredientes',
+    'almacen', 'advertencias', 'caducidad_txt']
+  return res.json({
+    lote: { id: datos.loteId, codigo: datos.loteInterno, cantidad: datos.cantidad },
+    producto: { sku: datos.sku, nombre: datos.articulo, presentaciones: datos.presentaciones },
+    caras: lista.map((c) => {
+      const falta = faltaDeUnaCara(c)
+      const out = { face: c.face, lista: c.lista, titulo: c.titulo, imprimible: falta.length === 0 }
+      if (falta.length) out.falta = falta
+      const conTexto = {}
+      for (const k of campos) if (c[k] !== null && c[k] !== undefined && c[k] !== '') conTexto[k] = c[k]
+      if (Object.keys(conTexto).length) out.campos = conTexto
+      return out
+    }),
+  })
 }))
 
 /** El QR suelto, para cuando se quiere la imagen y no la pegata entera. */

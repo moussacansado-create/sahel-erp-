@@ -98,9 +98,29 @@ function fila(etiqueta, valor) {
  * El tamaño se declara en milímetros con `@page { size: Xmm Ymm }`, que es lo
  * único que hace que el driver corte donde toca en vez de por donde le parece.
  */
-export function htmlEtiqueta(d, fmt = '60x40', copias = 1) {
+/**
+ * Compone UNA etiqueta de UNA cara.
+ *
+ * La plantilla no sabe de caras: recibe los mismos datos de siempre. Lo que
+ * cambia entre la delantera y la trasera son los campos de la ficha, y eso se
+ * resuelve AQUÍ, antes de maquetar. Si la plantilla se ocupara de las
+ * caras, habría dosmaquetas que mantener y bastaría con que una se
+ * desactualizara para que la etiqueta dijera una cosa y el sistema otra.
+ *
+ * La DELANTERA no lleva campos de uso. La TRASERA lleva los que tenga
+ * escritos. Lo que no esté escrito no se inventa y no se dibuja.
+ */
+function datosDeCara(base, cara) {
+  if (!cara || cara.face !== 'TRASERA') return base
+  return { ...base, caraTrasera: cara }
+}
+
+export function plantillaDeUnaEtiqueta(base, fmt = '60x40', cara = null) {
+  const d = datosDeCara(base, cara)
+
+
   const F = FORMATOS[fmt] || FORMATOS['60x40']
-  const n = Math.max(1, Math.min(200, Number(copias) || 1))
+  // El numero de copias lo cuenta la PAGINA, no esta etiqueta. aqui no hace falta.
   const urlQr = `/api/inventory/lotes/${d.loteId}/qr.png?tamano=300`
   const qrMm = Math.round(F.alto * F.altoQr)
   const art = `${d.sku} · ${d.articulo}`
@@ -125,7 +145,21 @@ export function htmlEtiqueta(d, fmt = '60x40', copias = 1) {
   // El formato decide CUÁNTOS campos caben. Los que no caben no se imprimen
   // de cualquier manera: no entran. Y la hoja de impresión lo DICE, para que
   // quien pega la etiqueta sepa qué tiene que mirar en la pantalla.
-  const permitidos = F.fichaCorta ? (k) => F.fichaCorta.includes(k) : () => true
+  // Qué campos caben en esta pegata. Cada formato tiene SU lista: una de
+  // 50x30 no da para ocho líneas, y meterlas todas obligaba a recortarlas sin
+  // avisar.
+  //
+  // Los campos de la TRASERA se admiten siempre que se esté imprimiendo esa
+  // cara, y no como unOMMISO Exception: la trasera no compite con la
+  // delantera, la REEMPLAZA. La delantera dice qué es; la trasera, cómo se
+  // usa. Meter en la trasera el «Recibido» que ya sale arriba no aporta nada y
+  // deja fuera el modo de uso, que es justo lo que hace falta.
+  const CAMPOS_TRASERA = ['Modo de uso', 'Composicion', 'Dosificacion',
+    'Lote ingredientes', 'Almacen', 'Advertencias', 'Caducidad (texto)']
+  const esTrasera = d.caraTrasera && d.caraTrasera.face === 'TRASERA'
+  const permitidos = F.fichaCorta
+    ? (k) => F.fichaCorta.includes(k) || (esTrasera && CAMPOS_TRASERA.includes(k))
+    : () => true
 
   // La ficha SOLO lleva lo que no está ya en otro sitio.
   //
@@ -133,10 +167,32 @@ export function htmlEtiqueta(d, fmt = '60x40', copias = 1) {
   // aquí llenaba la pegata de dos veces el mismo dato y obligaba a recortar
   // campos que síaban decir algo. Lo que queda es el contexto: cuándo entró,
   // quién lo trajo y cuándo caduca.
+  // Los campos de la TRASERA, cuando se está imprimiendo esa cara.
+  //
+  // Se meten en la MISMA ficha y no en un bloque aparte, y a propósito: es la
+  // misma plantilla, el mismo ancho y el mismo alto. Añadir un bloque
+  // propio sería maquetar una etiqueta nueva, y quien tiene la impresora
+  // puesta se encontraría con un formato que no es el suyo.
+  //
+  // Los vacíos no se dibujan. Una línea en blanco no dice «aquí no va nada»:
+  // dice «aquí no se ha escrito nada», que son cosas distintas y la segunda
+  // es un problema.
+  const tras = (d.caraTrasera || {})
+  const fichaTrasera = tras.face === 'TRASERA' ? [
+    ['Modo de uso', tras.modo_uso],
+    ['Composicion', tras.composicion],
+    ['Dosificacion', tras.dosificacion],
+    ['Lote ingredientes', tras.lote_ingredientes],
+    ['Almacen', tras.almacen],
+    ['Advertencias', tras.advertencias],
+    ['Caducidad (texto)', tras.caducidad_txt],
+  ].filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '') : []
+
   const ficha = [
     ['Recibido', fecha(d.recibidoEn)],
     ['Proveedor', d.proveedor],
     ['Caducidad', fecha(d.caducidad)],
+    ...fichaTrasera,
   ].filter(([k, v]) => permitidos(k) && v !== null && v !== undefined && v !== '')
 
   // LOS TRES IDENTIFICADORES, en su propia banda y con su nombre.
@@ -193,6 +249,33 @@ export function htmlEtiqueta(d, fmt = '60x40', copias = 1) {
       <div class="pie__d">${bloqueBarras}</div>
     </div>
   </div>`
+  return pegata
+}
+
+/**
+ * LA PAGINA con las etiquetas dentro.
+ *
+ * Envuelve lo que compone la funcion de arriba. La separacion es lo que hace
+ * que el motor de UNA etiqueta no se llame a si mismo: cuando se pedian mas
+ * de una, la recursion se comia la pila y el RangeError salia ANTES de que
+ * saliera nada por la impresora. Un fallo de recursion no se ve en la
+ * maqueta: se ve cuando alguien va a pegar etiquetas.
+ */
+export function htmlEtiqueta(base, fmt = '60x40', copias = 1, caras = null) {
+  const n = Math.max(1, Math.min(200, Number(copias) || 1))
+  const F = FORMATOS[fmt] || FORMATOS['60x40']
+  // El identificador grande lo usa el <title> de la pagina. Se calcula aqui
+  // y no se hereda de la etiqueta, porque la pagina se construye UNA vez y las
+  // etiquetas todas: si saliera de la etiqueta, la pagina dependeria de la
+  // primera, que es justo la clase de acoplamiento que hacia la recursion.
+  // La pagina tambien lleva datos del lote en el pie. Se leen de `base`,
+  // que ya es el objeto del lote: la pagina no depende de ninguna etiqueta.
+  const d = base
+  const principal = base.identificadorPrincipal || base.loteInterno || base.numeroEntrada
+  const aImprimir = (caras && caras.length) ? caras : [{ face: 'DELANTERA' }]
+  const pegas = aImprimir
+    .flatMap((c) => Array.from({ length: n }, () => plantillaDeUnaEtiqueta(base, fmt, c)))
+    .join('')
 
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
@@ -274,7 +357,7 @@ export function htmlEtiqueta(d, fmt = '60x40', copias = 1) {
   @media (max-width: 480px) { .fuera { padding: 3mm; max-width: none; } }
 </style></head>
 <body>
-<div class="hoja">${pegata.repeat(n)}</div>
+<div class="hoja">${pegas}</div>
 <div class="fuera">
   <p><b>${esc(d.sku)} · ${esc(d.articulo)}</b><br>${d.principalEsLote ? 'Lote de fabricacion' : 'Entrada'} <b>${esc(principal)}</b></p>
   <p>Formato ${esc(F.nombre)} · ${n === 1 ? '1 copia' : n + ' copias'}. Esta pantalla es solo para ver el resultado: al imprimir salen ${n} pegatas y nada más.</p>

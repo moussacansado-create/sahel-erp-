@@ -162,7 +162,33 @@ export async function datosDeEntrada(loteId) {
             i.id AS item_id, i.sku, i.name AS articulo, i.category_kind,
             u.name AS unidad, u.symbol AS unidad_simbolo,
             s.name AS proveedor,
-            (SELECT full_name FROM users WHERE id = l.created_by) AS recibido_por
+            (SELECT full_name FROM users WHERE id = l.created_by) AS recibido_por,
+            -- LAS DOS CARAS de la etiqueta, si están configuradas.
+            --
+            -- Se leen de item_label_faces por ARTÍCULO, no por lote: la
+            -- configuración es del producto (el mismo 750 ml lleva la misma
+            -- trasera en todos sus lotes), mientras que lo que SÍ es del
+            -- lote —código, cantidad, fecha— lo pone htmlEtiqueta encima.
+            --
+            -- Se traen las dos de golpe y sin filtrar por lista: quien
+            -- pide la etiqueta tiene que poder ver que la trasera existe
+            -- aunque no esté lista. Ocultarla sería esconder el aviso.
+            (SELECT json_agg(json_build_object(
+                      'face', f.face, 'titulo', f.titulo, 'lista', f.lista,
+                      'modo_uso', f.modo_uso, 'composicion', f.composicion,
+                      'dosificacion', f.dosificacion,
+                      'lote_ingredientes', f.lote_ingredientes,
+                      'almacen', f.almacen, 'advertencias', f.advertencias,
+                      'caducidad_txt', f.caducidad_txt)
+                    ORDER BY f.face)
+               FROM item_label_faces f
+              WHERE f.item_id = l.item_id) AS caras,
+            -- La presentación de ESTE artículo: 500 ml, 750 ml, 1 litro. Es
+            -- lo que va impreso junto al nombre, y es lo que distingue un
+            -- envase de otro del mismo producto.
+            (SELECT string_agg(p.name, ' · ' ORDER BY p.volume_ml NULLS LAST, p.name)
+               FROM item_presentations p
+              WHERE p.item_id = l.item_id AND p.is_active) AS presentaciones
        FROM lots l
        JOIN items i ON i.id = l.item_id
        LEFT JOIN units u ON u.id = l.unit_id
@@ -470,4 +496,71 @@ export async function listarSeriesCompleto() {
     `SELECT codigo, nombre, clase, prefijo, digitos, con_anio, anio, ultimo_valor, is_active
        FROM config_series ORDER BY clase, codigo`,
   )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LAS DOS CARAS
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Una botella lleva dos etiquetas: la delantera, que dice QUÉ es, y la
+// trasera, que dice CÓMO se usa. El motor imprimía una sola, y con esta se
+// pueden pedir por separado o las dos de golpe.
+//
+// ── LA TRASERA INCOMPLETA NO SE IMPRIME ───────────────────────────────────
+//
+// Es lo más importante de este bloque. Una etiqueta trasera con el modo de
+// uso vacío y la composición en blanco no es una etiqueta incompleta: es una
+// etiqueta que MIENTE, porque quien la usa no va a saber ni qué echa ni con
+// qué cuidado. Aquí se devuelve el motivo y la operación se para; el que
+// tiene que decidir es quien vende, no el sistema.
+//
+// La DELANTERA sí se imprime aunque no haya nada más: nombre, formato y
+// código de barras son datos que ya existen y no se inventan.
+
+/** Lo que le falta a una cara para poder imprimirse. Vacío = imprimible. */
+export function faltaDeUnaCara(cara) {
+  if (!cara) return ['Esta etiqueta no tiene configurada ninguna cara.']
+  if (!cara.lista) return ['Esta cara está marcada como NO LISTA en Ajustes.']
+  // LA DELANTERA NO TIENE EXIGENCIAS. Su contenido —nombre, formato, código—
+  // sale solo de la ficha del producto, y la línea ya la da hecha. Pedirle una
+  // composición sería pedirle algo que no lleva por naturaleza: una botella se
+  // identifica por delante y se usa por detrás.
+  if (cara.face === 'DELANTERA') return []
+  const out = []
+  if (!String(cara.modo_uso || '').trim()) out.push('modo de uso')
+  if (!String(cara.composicion || '').trim()) out.push('composición')
+  if (!String(cara.dosificacion || '').trim()) out.push('dosificación')
+  if (String(cara.advertencias || '').trim() && !String(cara.caducidad_txt || '').trim()) {
+    out.push('caducidad (hay advertencias sin fecha)')
+  }
+  return out
+}
+
+/** Resuelve qué caras se piden y si se puede imprimir. */
+export function resolverCaras(caras, pedida) {
+  const lista = Array.isArray(caras) ? caras : []
+  const d = lista.find((c) => c.face === 'DELANTERA') || null
+  const t = lista.find((c) => c.face === 'TRASERA') || null
+
+  const querer = (pedida || 'DELANTERA').toUpperCase()
+  let pedidas
+  if (querer === 'LAS_DOS' || querer === 'AMBAS' || querer === 'TODAS') pedidas = [d, t].filter(Boolean)
+  else if (querer === 'TRASERA') pedidas = [t]
+  else pedidas = [d]
+
+  if (!pedidas.length) {
+    return { ok: false, motivo: `La etiqueta «${querer}» no está configurada para este producto.`, caras: [] }
+  }
+  for (const c of pedidas) {
+    const falta = faltaDeUnaCara(c)
+    if (falta.length) {
+      return {
+        ok: false,
+        motivo: `No se imprime la etiqueta ${c.face === 'DELANTERA' ? 'delantera' : 'trasera'}: falta ${falta.join(', ')}. `
+          + 'Se rellena en Ajustes → Etiquetas antes de imprimir.',
+        caras: pedidas,
+      }
+    }
+  }
+  return { ok: true, caras: pedidas }
 }
