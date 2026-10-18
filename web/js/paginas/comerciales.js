@@ -398,6 +398,17 @@ export async function paginaComerciales(ctx) {
     // responsable, que es lo que se viene a hacer.
     const principal = (g.asignados || []).find((a) => a.es_principal)
     if (principal) {
+      // El responsable de la zona NO está en «disponibles»: esa lista es la
+      // de los comerciales que todavía NO tienen esa zona. Si se le pone su
+      // identificador en el selector sin opción que lo respalde, el valor se
+      // queda vacío en silencio y el formulario sale en blanco. Por eso se
+      // añade la opción si no estaba.
+      if (![...sel.options].some((o) => o.value === String(principal.comercial_id))) {
+        sel.appendChild(el('option', {
+          value: String(principal.comercial_id),
+          text: `${principal.full_name || 'Comercial ' + principal.comercial_id} (responsable actual)`,
+        }))
+      }
       sel.value = String(principal.comercial_id)
       prio.checked = true
       if (pct.value === '' || pct.value === null) pct.value = '100'
