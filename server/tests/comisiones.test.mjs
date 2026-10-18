@@ -293,10 +293,14 @@ try {
 }
 
 async function limpiar() {
-  for (const pid of [pedidoA, pedidoB].filter(Boolean)) {
-    await api(admin, `/api/orders/${pid}/anular`, 'POST', { motivo: MARCA })
+  // El cliente de prueba se ARCHIVA, para que no esté en la lista de
+  // clientes. Los pedidos NO se anulan: tienen mercancía entregada y dinero
+  // cobrado, y anularlos dejaba cobros sin venta. Anular un pedido con
+  // dinero cobrado es una devolución, que es otra cosa, y aquí no se hace.
+  if (clienteId) {
+    await api(admin, `/api/customers/${clienteId}/archivar`, 'POST', { motivo: MARCA })
   }
-  console.log(`  · pedidos de prueba anulados: ${[pedidoA, pedidoB].filter(Boolean).join(', ')}`)
+  console.log(`  · cliente de prueba archivado: ${clienteId} · pedidos: ${[pedidoA, pedidoB].filter(Boolean).join(', ')}`)
 }
 
 console.log(`\nTOTAL ${ok}/${total}`)

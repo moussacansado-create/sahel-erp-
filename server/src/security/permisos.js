@@ -43,7 +43,14 @@ export const MODULOS = [
   'commissions',
 ]
 
-export const ACCIONES = ['view', 'create', 'edit', 'delete', 'approve', 'export']
+// `manage` es la llave de INTERFAZ de un módulo: «esta persona lo
+// administra». La lista de `/auth/me` se genera como módulo × acción, así que
+// una acción que no está aquí no le llega NUNCA al navegador, por más que
+// esté en la base y en el CHECK.
+//
+// El servidor no usa `manage` para autorizar: ahí siguen mandando las
+// acciones finas. Esta es solo la pregunta de la pantalla.
+export const ACCIONES = ['view', 'create', 'edit', 'delete', 'approve', 'export', 'manage']
 
 /** Middleware: exige sesión. */
 export function requiereSesion({ query, one }) {

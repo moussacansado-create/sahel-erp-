@@ -162,6 +162,13 @@ async function pantallaComercial(raiz) {
 
   const selPeriodo = el('input', { type: 'month', class: 'input', value: periodoActual() })
   const cuerpo = el('div')
+  // LA CAJA DEL HISTORIAL, GUARDADA.
+  //
+  // No se busca por id con `document.getElementById`: el router monta la
+  // pantalla DESPUÉS de que esta función termine, así que mientras se está
+  // cargando el elemento todavía no está en el documento y la búsqueda
+  // devolvería null. Se guarda la referencia y se usa.
+  const cajaHistorial = el('div', { id: 'historial-propio' }, [cargando('…')])
 
   async function cargar() {
     cuerpo.replaceChildren(cargando('…'))
@@ -184,7 +191,19 @@ async function pantallaComercial(raiz) {
     // comisión DEFINITIVA, congelada, con su estado de pago. Nunca se ve una
     // cifra provisional donde la definitiva, ni al revés.
     const cab = com?.estado ? ESTADOS[com.estado] : ESTADOS.PENDIENTE_REVISION
-    const importe = provisional ? c.comision_estimada : (com?.comision_confirmada ?? 0)
+
+    // UN MES CONFIRMADO SE MUESTRA CON SUS CIFRAS CONGELADAS.
+    //
+    // La estimación es de ANTES de confirmar. Si el mes ya está confirmado,
+    // lo que vale es lo que se confirmó: la base y el importe de entonces.
+    // Enseñar la estimación de ahora al lado de la comisión confirmada
+    // daría dos cifras distintas de lo mismo, y la gente compararía.
+    const mostrado = provisional ? c : {
+      ...c,
+      base_cobrada: Number(com.base_confirmada ?? c.base_cobrada),
+      porcentaje_aplicado: Number(com.porcentaje_confirmado ?? c.porcentaje_aplicado),
+      comision_estimada: Number(com.comision_confirmada ?? c.comision_estimada),
+    }
 
     cuerpo.replaceChildren(
       panel('Mi comisión de ' + nombreDePeriodo(periodo),
@@ -206,14 +225,14 @@ async function pantallaComercial(raiz) {
                   : 'Pendiente de pago.',
               }),
             ]),
-          barraComision(c, mon),
+          barraComision(mostrado, mon),
           panel('De dónde sale la base', null, el('div', { class: 'pila' }, [
             el('p', { class: 'pista', text: 'Los cobros del mes, con lo verificado y lo que aún no.' }),
             tablaCobros(c.cobros, c.cobros_pendientes, c.cobros_rechazados, mon),
           ])),
           panel('Pedidos del mes', null, tablaPedidos(c.pedidos, mon)),
         ])),
-      panel('Meses anteriores', null, el('div', { id: 'historial-propio' }, [cargando('…')])),
+      panel('Meses anteriores', null, cajaHistorial),
     )
 
     // EL HISTORIAL PROPIO
@@ -237,7 +256,7 @@ async function pantallaComercial(raiz) {
     } catch (e) {
       lista.replaceChildren(aviso(e.message, 'error'))
     }
-    document.getElementById('historial-propio')?.replaceChildren(lista)
+    cajaHistorial.replaceChildren(lista)
   }
 
   selPeriodo.addEventListener('change', cargar)
