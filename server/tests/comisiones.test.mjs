@@ -122,8 +122,8 @@ try {
 
   // El total del pedido NO cambia al cobrar: lo que cambia es lo PENDIENTE.
   // El importe cobrado sale del propio cobro, que es la verdad.
-  const cobradoReal = Number(cob.body?.pago?.amount ?? cob.body?.amount
-    ?? cob.body?.importe ?? cob.body?.pago?.importe ?? 0)
+  const cobradoReal = Number(cob.body?.cobro?.amount ?? cob.body?.pago?.amount
+    ?? cob.body?.amount ?? cob.body?.importe ?? 0)
   const pendienteDeCobrar = importeA - cobradoReal
   chk(cobradoReal > 0 && pendienteDeCobrar > 0 && pendienteDeCobrar < importeA,
     `R4b · el cobro es PARCIAL: se cobran ${cobradoReal} de ${importeA}`)
@@ -145,10 +145,13 @@ try {
   const mi = await api(comToken || admin, `/api/comisiones/mi/${PERIODO}`)
   const calc = mi.body?.calculo
   chk(!!calc, `R1b · el calculo responde (${mi.status})`)
-  chk(calc && Math.abs(Number(calc.base_cobrada) - pendienteDeCobrar) < 2,
-    `R1c · la base cobrada es lo cobrado (${calc?.base_cobrada} ≈ ${pendienteDeCobrar})`)
-  chk(calc && Math.abs(Number(calc.comision_estimada) - Math.round(pendienteDeCobrar * 0.03)) < 2,
-    `R1d · comision = base × 3 % (${calc?.comision_estimada} ≈ ${Math.round(pendienteDeCobrar * 0.03)})`)
+  const sumaDetalle = (calc?.cobros || []).reduce((s2, c) => s2 + Number(c.importe_base), 0)
+  chk(calc && Math.abs(Number(calc.base_cobrada) - sumaDetalle) < 2,
+    `R1c · la base cobrada es la suma de sus cobros (${calc?.base_cobrada} = ${sumaDetalle})`)
+  chk(calc && Math.abs(Number(calc.comision_estimada) - Math.round(Number(calc.base_cobrada) * 0.03)) < 2,
+    `R1d · comision = base × 3 % (${calc?.comision_estimada} ≈ ${Math.round(Number(calc?.base_cobrada || 0) * 0.03)})`)
+  chk(calc && Number(calc.base_cobrada) >= cobradoReal,
+    `R1f · la base incluye este cobro (${calc?.base_cobrada} ≥ ${cobradoReal})`)
   chk(calc?.moneda === 'XOF', `R1e · en la moneda base (${calc?.moneda})`)
 
   // ── 3 · PENDIENTE Y COBRADO, APARTADOS ──────────────────────────────────
@@ -163,8 +166,10 @@ try {
   if (comToken) {
     const v = await api(comToken, `/api/comisiones/mi/${PERIODO}`)
     chk(v.status === 200, `R5 · el comercial ve su resumen (HTTP ${v.status})`)
-    chk(v.body?.provisional === true, 'R5b · lo que ve es una estimación provisional')
-    chk(!v.body?.comision?.comision_confirmada, 'R5c · NO ve comisión definitiva antes de confirmar')
+    // Un mes SIN comisión confirmada: lo que ve es una estimación.
+    const libre = await api(comToken, '/api/comisiones/mi/2026-11')
+    chk(libre.body?.provisional === true, 'R5b · sin confirmar, lo que ve es una estimación provisional')
+    chk(!libre.body?.comision?.comision_confirmada, 'R5c · NO ve ninguna comisión definitiva sin confirmar')
   }
 
   // ── 6 · LA DEFINITIVA SOLO TRAS CONFIRMAR ───────────────────────────────

@@ -29,6 +29,27 @@ import {
 } from '../../core/comisiones.js'
 
 const rutas = Router()
+
+/**
+ * Un error de dominio NO es un 500. «No hay porcentaje aplicable» o «el pago
+ * necesita su fecha» son respuestas al que pregunta, no fallos del servidor.
+ * Un 500 mudo deja a la persona mirando una pantalla en blanco sin saber si
+ * ha hecho algo mal.
+ */
+function domino(fn) {
+  return async (req, res) => {
+    try {
+      await fn(req, res)
+    } catch (e) {
+      const estado = e.estado || e.status || (e.codigo ? 400 : 500)
+      if (estado >= 500) {
+        console.error('[comisiones]', e)
+        return res.status(500).json({ error: 'Error interno del servidor', codigo: 'ERROR_INTERNO' })
+      }
+      res.status(estado).json({ error: e.message, codigo: e.codigo || 'COMISION_INVALIDA' })
+    }
+  }
+}
 const auth = requiereSesion({ query, one })
 
 const VER = requiereAlgunoDe([['commissions', 'view']], 'ver las comisiones')
@@ -182,20 +203,20 @@ rutas.get('/comisiones/:id', auth, VER, async (req, res) => {
 // El administrador pide el resumen. Se recalcula lo provisional. Lo ya
 // confirmado no se toca: por eso es idempotente.
 //
-rutas.post('/comisiones/preparar', auth, CONFIRMAR, async (req, res) => {
+rutas.post('/comisiones/preparar', auth, CONFIRMAR, dominio(async (req, res) => {
   const periodo = String(req.body?.periodo || periodoDe(new Date()))
   const r = await prepararMes(periodo, req.user.id)
   res.json(r)
-})
+}))
 
 // ── CONFIRMAR ──────────────────────────────────────────────────────────────
-rutas.post('/comisiones/:id/confirmar', auth, CONFIRMAR, async (req, res) => {
+rutas.post('/comisiones/:id/confirmar', auth, CONFIRMAR, dominio(async (req, res) => {
   const c = await confirmarComision(id(req.params.id), req.user.id, req.body?.nota)
   res.json({ comision: c })
-})
+}))
 
 // ── REGISTRAR EL PAGO ──────────────────────────────────────────────────────
-rutas.post('/comisiones/:id/pagar', auth, PAGAR, async (req, res) => {
+rutas.post('/comisiones/:id/pagar', auth, PAGAR, dominio(async (req, res) => {
   const r = await registrarPago(id(req.params.id), {
     importe: req.body?.importe,
     fecha: req.body?.fecha,
@@ -203,7 +224,7 @@ rutas.post('/comisiones/:id/pagar', auth, PAGAR, async (req, res) => {
     nota: req.body?.nota,
   }, req.user.id)
   res.json(r)
-})
+}))
 
 // ── LOS PORCENTAJES ────────────────────────────────────────────────────────
 rutas.get('/comisiones/porcentajes', auth, VER, async (req, res) => {
@@ -235,7 +256,7 @@ rutas.get('/comisiones/porcentajes/:comercialId', auth, VER, async (req, res) =>
   res.json({ porcentajes: await historialPorcentajes(cid) })
 })
 
-rutas.post('/comisiones/porcentajes', auth, CONFIGURAR, async (req, res) => {
+rutas.post('/comisiones/porcentajes', auth, CONFIGURAR, dominio(async (req, res) => {
   const p = await ponerPorcentaje({
     comercialId: id(req.body?.comercial_id),
     porcentaje: req.body?.porcentaje,
@@ -244,6 +265,6 @@ rutas.post('/comisiones/porcentajes', auth, CONFIGURAR, async (req, res) => {
     usuarioId: req.user.id,
   })
   res.json({ porcentaje: p })
-})
+}))
 
 export default rutas

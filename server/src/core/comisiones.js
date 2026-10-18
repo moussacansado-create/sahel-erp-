@@ -121,7 +121,7 @@ export async function ponerPorcentaje({ comercialId, porcentaje, vigenteDesde, m
     // esta fecha, cerrarla con el día de antes dejaría `vigente_hasta` ANTES
     // que `vigente_desde`, y la comprobación de la base lo veta. Solo se
     // cierra la fila ANTERIOR de verdad, que es la de un día antes.
-    const mismaFila = anterior && anterior.vigente_desde === desde
+    const mismaFila = anterior && String(anterior.vigente_desde).slice(0, 10) === desde
     if (anterior && !mismaFila) {
       const cierre = new Date(`${desde}T00:00:00Z`)
       cierre.setUTCDate(cierre.getUTCDate() - 1)
