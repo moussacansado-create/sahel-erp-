@@ -102,6 +102,15 @@ try {
   await p.setViewport({ width: 1400, height: 1000 })
   const erroresCom = []
   p.on('pageerror', (e) => erroresCom.push(String(e.message)))
+  // Lo que el servidor LE DA a esta sesion. No lo que la pantalla pinta:
+  // el aislamiento se comprueba en el dato, antes de que se pinte.
+  const respuestas = []
+  p.on('response', async (r) => {
+    const u = r.url()
+    if (!/\/api\/comisiones/.test(u)) return
+    try { respuestas.push({ url: u.replace(/\?.*/, ''), status: r.status(), cuerpo: await r.text() }) }
+    catch { /* la respuesta se fue antes de poder leerla */ }
+  })
 
   await entrar(p, COMERCIAL, P, '#/comisiones')
 
@@ -145,7 +154,8 @@ try {
 
   // El historial.
   const filasHistorial = await p.evaluate(() => document.querySelectorAll('.tabla--historial tbody tr').length)
-  chk(filasHistorial > 0, `C10 · ve el historial de meses anteriores (${filasHistorial} meses)`)
+  chk(filasHistorial > 0,
+    `C10 · ve el historial de meses anteriores (${filasHistorial} meses; respuestas: ${respuestas.map((r) => r.url + '=' + r.status).join(', ')})`)
 
   // NO debe ver controles de administración.
   const textoAdmin = await p.evaluate(() => document.body.innerText)
@@ -153,16 +163,22 @@ try {
     'C11 · el comercial NO ve controles de administración')
   chk(!/Guardar porcentaje/.test(textoAdmin), 'C12 · el comercial NO ve el formulario de porcentaje')
 
-  // Y desde la API tampoco puede tocar lo de otro.
-  const aislamiento = await p.evaluate(async () => {
-    const t = localStorage.getItem('token') || localStorage.getItem('access_token')
-    const r = await fetch('/api/comisiones?comercial_id=999', {
-      headers: { Authorization: 'Bearer ' + t } })
-    const d = await r.json()
-    return { n: (d.comisiones || []).length, codigos: (d.comisiones || []).map((c) => c.comercial_id) }
-  })
-  chk(aislamiento.n === 0 || !aislamiento.codigos.includes(999),
-    `C13 · pidiendo el resumen de otro NO le da los datos de otro (${JSON.stringify(aislamiento.codigos).slice(0, 60)})`)
+  // Y el servidor no le da datos de otro. Se mira la respuesta REAL de la
+  // red: la que la aplicación recibió, no la que alguien pidió aparte.
+  const lista = respuestas.find((r) => r.url.endsWith('/api/comisiones'))
+  let codigos = []
+  let estado = null
+  if (lista) {
+    estado = lista.status
+    try {
+      const d = JSON.parse(lista.cuerpo)
+      codigos = (d.comisiones || []).map((c) => c.comercial_id)
+    } catch { codigos = [] }
+  }
+  chk(!!lista, `C13 · la aplicacion pide las comisiones al servidor (${respuestas.length} respuestas)`)
+  chk(codigos.length > 0 && codigos.every((c) => c === 4),
+    `C13b · el servidor solo le da SUS comisiones (${JSON.stringify(codigos)})`)
+  chk(estado === 200, `C13c · la peticion de su propio listado responde bien (${estado})`)
 
   chk(erroresCom.length === 0, `C14 · sin errores de JavaScript en la vista del comercial (${erroresCom.length})`)
   if (erroresCom.length) erroresCom.slice(0, 3).forEach((e) => console.log('      · ' + e.slice(0, 90)))

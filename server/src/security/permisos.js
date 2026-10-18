@@ -31,6 +31,16 @@ export const MODULOS = [
   // La mitad de la garantía vive en la base y la otra en esta lista, y por eso
   // tienen que coincidir. Un permiso que solo está en un sitio no existe.
   'rankings',
+  // `commissions` tiene que estar aquí por la misma razón que `rankings`.
+  //
+  // Sin él, la fila de `role_permissions` existe en la base y el ADMIN pasa
+  // los 403 del servidor, pero `/auth/me` no le devuelve `commissions:view`
+  // ni `commissions:manage`, la interfaz usa `A.puede` y le oculta el
+  // apartado entero.
+  //
+  // La mitad de la garantía vive en la base y la otra en esta lista, y por eso
+  // tienen que coincidir. Un permiso que solo está en un sitio no existe.
+  'commissions',
 ]
 
 export const ACCIONES = ['view', 'create', 'edit', 'delete', 'approve', 'export']
