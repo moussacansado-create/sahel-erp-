@@ -137,11 +137,11 @@ rutas.get('/comisiones/resumen/:periodo', auth, VER, async (req, res) => {
     ? [id(req.query.comercial_id)]
     : (a.comercialId ? [a.comercialId] : delMes.map((c) => c.comercial_id))
 
-  const resúmenes = []
+  const resumenes = []
   for (const cid of pedidos) {
     const calc = await calcular(cid, periodo)
     const guardada = delMes.find((c) => c.comercial_id === cid) || null
-    resúmenes.push({
+    resumenes.push({
       comercial_id: cid,
       comercial_nombre: guardada?.comercial_nombre
         || (await one('SELECT u.full_name FROM com_perfiles cp JOIN users u ON u.id = cp.user_id WHERE cp.id = $1', [cid]))?.full_name
