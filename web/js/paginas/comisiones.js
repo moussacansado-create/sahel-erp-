@@ -143,8 +143,15 @@ export async function paginaComisiones() {
   raiz.append(cargando('Cargando comisiones…'))
 
   // ── EL COMERCIAL ─────────────────────────────────────────────────────────
-  if (!administra) return pantallaComercial(raiz)
-  return pantallaAdmin(raiz)
+  // EL ROUTER ESPERA QUE ESTA FUNCIÓN DEVUELVA LA PANTALLA.
+  //
+  // `vista.replaceChildren(contenido)`: lo que se pinta es lo que se
+  // devuelve. Si aquí no se devuelve nada, la pantalla sale VACIA y no hay
+  // ningun error: el router no se queja, simplemente no pinta nada. Por eso
+  // se devuelve `raiz` y no se monta a mano.
+  if (!administra) await pantallaComercial(raiz)
+  else await pantallaAdmin(raiz)
+  return raiz
 }
 
 // ───────────────────────────────────────────────────────────────────────────
