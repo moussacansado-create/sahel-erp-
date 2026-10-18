@@ -36,7 +36,7 @@ const rutas = Router()
  * Un 500 mudo deja a la persona mirando una pantalla en blanco sin saber si
  * ha hecho algo mal.
  */
-function domino(fn) {
+function dominio(fn) {
   return async (req, res) => {
     try {
       await fn(req, res)
