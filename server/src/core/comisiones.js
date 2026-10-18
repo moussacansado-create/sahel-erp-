@@ -117,7 +117,12 @@ export async function ponerPorcentaje({ comercialId, porcentaje, vigenteDesde, m
         ORDER BY vigente_desde DESC LIMIT 1`,
       [comercialId, desde],
     )
-    if (anterior) {
+    // El MISMO día se REVISA, no se cierra. Si la fila vigente es justo la de
+    // esta fecha, cerrarla con el día de antes dejaría `vigente_hasta` ANTES
+    // que `vigente_desde`, y la comprobación de la base lo veta. Solo se
+    // cierra la fila ANTERIOR de verdad, que es la de un día antes.
+    const mismaFila = anterior && anterior.vigente_desde === desde
+    if (anterior && !mismaFila) {
       const cierre = new Date(`${desde}T00:00:00Z`)
       cierre.setUTCDate(cierre.getUTCDate() - 1)
       await tx.query(
@@ -213,7 +218,7 @@ const SQL_PEDIDOS = `
                                     THEN p.amount
                                     ELSE p.amount * COALESCE(p.exchange_rate, 0) END))
                      FROM payments p
-                    WHERE p.sales_order_id = o.id AND p.status = 'VERIFIED'), 0) AS cobrado
+                    WHERE p.sales_order_id = o.id AND p.status IN ('PENDING','VERIFIED')), 0) AS cobrado
     FROM sales_orders o
     JOIN customers c ON c.id = o.customer_id
     LEFT JOIN com_perfiles cp ON cp.id = o.comercial_id
@@ -240,12 +245,26 @@ export async function calcular(comercialId, periodo) {
   const cobros = await query(SQL_COBROS, [comercialId, desde.toISOString(), hasta.toISOString(), mon])
   const pedidos = await query(SQL_PEDIDOS, [comercialId, desde.toISOString(), hasta.toISOString(), mon])
 
-  // Lo cobrado son SOLO los verificados. Los otros dos se muestran aparte.
+  // LO COBRADO, SEGÚN LA REALIDAD DEL ERP.
+  //
+  // Un cobro registrado en `payments` es dinero cobrado: el propio ERP lo
+  // descuenta del pendiente del pedido, y por eso un segundo cobro del mismo
+  // pedido sale con «ya pagado». Lo que NO ha-payado es `REJECTED`.
+  //
+  // El estado `PENDING` (lo normal: NADIE lo verifica, porque el flujo de
+  // verificación no existe en el ERP) y `VERIFIED` cuentan los dos como
+  // cobrado, y se muestran APARTADOS en el detalle para que el administrador
+  // vea de inmediato cuánto está todavía sin verificar. Si mañana ese flujo
+  // existe, el corte se hace aquí y en un sitio.
+  //
+  // La diferencia importa: si solo contaran los VERIFIED, la base de la
+  // comisión sería CERO siempre, y el módulo no mediría nada.
   const verificados = cobros.filter((c) => c.estado === 'VERIFIED')
-  const pendientesCobro = cobros.filter((c) => c.estado === 'PENDING')
+  const sinVerificar = cobros.filter((c) => c.estado === 'PENDING')
   const rechazados = cobros.filter((c) => c.estado === 'REJECTED')
+  const cobrados = [...verificados, ...sinVerificar]
 
-  const baseCobrada = verificados.reduce((s, c) => s + Number(c.importe_base), 0)
+  const baseCobrada = cobrados.reduce((s, c) => s + Number(c.importe_base), 0)
   // Lo que se vendió y no está cobrado: pedido menos lo ya verificado.
   const basePendiente = pedidos.reduce((s, p) => s + Math.max(0, Number(p.pedido_total) - Number(p.cobrado)), 0)
 
@@ -262,8 +281,8 @@ export async function calcular(comercialId, periodo) {
     porcentaje_aplicado: porcentaje,
     comision_estimada: comisionEstimada,
     porcentaje_vigente_desde: pct?.vigente_desde || null,
-    cobros: verificados.map((c) => ({ ...c, importe_base: redondear(c.importe_base) })),
-    cobros_pendientes: pendientesCobro.map((c) => ({ ...c, importe_base: redondear(c.importe_base) })),
+    cobros: cobrados.map((c) => ({ ...c, importe_base: redondear(c.importe_base) })),
+    cobros_pendientes: sinVerificar.map((c) => ({ ...c, importe_base: redondear(c.importe_base) })),
     cobros_rechazados: rechazados.map((c) => ({ ...c, importe_base: redondear(c.importe_base) })),
     pedidos: pedidos.map((p) => ({
       ...p,

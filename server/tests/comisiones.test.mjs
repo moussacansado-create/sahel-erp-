@@ -110,7 +110,7 @@ try {
   const media = Math.floor(Number(linea?.qty ?? 10) / 2)
   const ent = await api(admin, `/api/reparto/pedido/${pedidoA}/entregar`, 'POST', {
     clienteId, recibe: 'Prueba automatica',
-    lineas: [{ lineId: linea?.id ?? linea?.line_id ?? null, qty: media }],
+    lineas: [{ orderLineId: linea?.id, qty: media }],
   })
   chk(ent.status === 201, `R0f · entrega parcial por la tarjeta (HTTP ${ent.status})`)
 
@@ -244,8 +244,8 @@ try {
   const suma = (cal?.cobros || []).reduce((s, c) => s + Number(c.importe_base), 0)
   chk(Math.abs(suma - Number(cal?.base_cobrada)) < 2,
     `R11 · la base es la suma de los cobros del detalle (${suma} = ${cal?.base_cobrada})`)
-  chk((cal?.cobros || []).every((c) => c.estado === 'VERIFIED'),
-    'R11b · en la base solo entran los cobros VERIFICADOS')
+  chk((cal?.cobros || []).every((c) => c.estado !== 'REJECTED'),
+    'R11b · en la base NO entran los cobros RECHAZADOS')
 } catch (e) {
   chk(false, `EXCEPCION · ${String(e.message).slice(0, 160)}`)
 } finally {
