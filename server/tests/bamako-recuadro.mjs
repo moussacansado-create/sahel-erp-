@@ -94,6 +94,14 @@ try {
 
   // ── 4 · SE PULSA UNA SUBAZONA Y SE ABRE SU FICHA ─────────────────────────
   const z = grandes.find((x) => /Centro/i.test(x.nombre)) || grandes[0]
+  const zid = await p.evaluate((nom) => {
+    const e = document.querySelector(`.mapa__recuadro path[data-zona-id]`)
+    for (const q of document.querySelectorAll('.mapa__recuadro path[data-zona-id]')) {
+      if (q.getAttribute('aria-label') === nom) return q.getAttribute('data-zona-id')
+    }
+    return null
+  }, z.nombre)
+  chk(zid !== null, `R2b · la zona del recuadro lleva identificador estable (${zid})`)
   await p.mouse.click(z.x, z.y)
   await pausa(2500)
   const ficha = await p.evaluate(() => {
@@ -133,11 +141,15 @@ try {
   // Tras recargar NO hay zona seleccionada: el panel sale vacio y no se puede
   // mirar nada. Se vuelve a pulsar la zona, que es lo que haria una persona, y
   // solo entonces se comprueba si lo guardado sigue ahi.
-  await p.evaluate((nom) => {
-    const b = [...document.querySelectorAll('.zonas__rejilla button')]
-      .find((x) => x.textContent.includes(nom))
-    if (b) b.click()
-  }, 'Bamako Centro')
+  // Por el IDENTIFICADOR, no por el texto: el texto es lo que ve la persona
+  // y puede cambiar; el id es lo que identifica a la zona de verdad.
+  const reSel = await p.evaluate((id) => {
+    const b = document.querySelector(`.zonas__rejilla button[data-zona-id="${id}"]`)
+    if (!b) return { ok: false, motivo: 'no hay boton con ese data-zona-id' }
+    b.click()
+    return { ok: true }
+  }, String(zid))
+  chk(reSel.ok, `R6a · tras recargar se vuelve a seleccionar la zona por su id (${reSel.motivo || 'ok'})`)
   await pausa(3500)
   const persistido = await p.evaluate((id) => {
     const pn = document.querySelector('.panel-zona, #panel-zona, [data-panel-zona]')

@@ -94,6 +94,7 @@ function dibujarMapa(zonas, selId, conEquipo, alElegir, op = {}) {
     'aria-label': op.aria || 'Mapa de las nueve regiones de Mali',
   })
 
+  const puestos = []
   for (const z of [...zonas].sort((a, b) => (a.id === selId ? 1 : b.id === selId ? -1 : 0))
     .map((z) => ({ ...z, esPadre: !!(op.sinRotuloPadre && z.id === 1) }))) {
     const p = (z.poligono ?? []).map(proy)
@@ -103,6 +104,7 @@ function dibujarMapa(zonas, selId, conEquipo, alElegir, op = {}) {
       class: ['mapa__zona', z.id === selId ? 'mapa__zona--activa' : '',
         conEquipo.has(z.id) ? 'mapa__zona--principal' : ''].filter(Boolean).join(' '),
       tabindex: '0', role: 'button', 'aria-label': `${z.nombre}`,
+      'data-zona-id': String(z.id),
     })
     const t = svg('title')
     t.textContent = `${z.nombre} — ${z.cumplimiento}`
@@ -116,15 +118,31 @@ function dibujarMapa(zonas, selId, conEquipo, alElegir, op = {}) {
     // El nombre, DENTRO de su polígono. Un mapa sin rótulos es un mapa de
     // siluetas: se ve Mali, pero no se sabe qué es cada trozo.
     const [cx, cy] = proy([z.lng, z.lat])
-    // El desplazamiento aparta los rótulos que caen en el mismo punto. En el
-    // mapa de Mali van repartidos; en el recuadro de Bamako, que es varias veces
-    // más pequeño, Norte y Sur se centran casi encima y el segundo
-    // tapaba al primero. Se separan un poco y se les pone un halo blanco para
-    // que se lean sobre el relleno de la zona.
-    const alto2 = op.etiquetaAlto ? 13 : 0
+    // EL RÓTULO, COLOCADO.
+    //
+    // En el mapa de Mali los rótulos van repartidos y no se tocan. En el
+    // recuadro de Bamako, que es unas veinte veces más pequeño, «Centro» y
+    // «Oeste» tienen el centro casi en el mismo punto: con el mismo
+    // desplazamiento para todos seguían encima.
+    //
+    // Así que cada rótulo se coloca donde puede: se prueba en su sitio y, si
+    // pisa a uno ya puesto, baja hasta encontrar hueco. El ancho se estima
+    // por número de letras, que es lo que hace el navegador, y se deja
+    // margen para que el halo blanco no toque al vecino.
+    const anchoR = z.nombre.length * 7.2 + 6
+    const altoR = 15
+    let ly = cy
+    for (let intento = 0; intento < 12; intento++) {
+      const choca = puestos.some((p) => Math.abs(p.x - cx) < (p.ancho + anchoR) / 2
+        && Math.abs(p.y - ly) < altoR)
+      if (!choca) break
+      ly += altoR
+    }
+    puestos.push({ x: cx, y: ly, ancho: anchoR })
     const txt = svg('text', {
-      x: cx, y: cy + alto2, class: `mapa__etiqueta ${op.etiquetaAlto ? 'mapa__etiqueta--recuadro' : ''}`,
+      x: cx, y: ly, class: `mapa__etiqueta ${op.etiquetaAlto ? 'mapa__etiqueta--recuadro' : ''}`,
       'text-anchor': 'middle', 'pointer-events': 'none',
+      'data-zona-id': String(z.id),
     })
     // En el recuadro, el distrito (Bamako) NO lleva rotulo: sus cinco zonas
     // los llevan, y el titulo del recuadro ya dice «Distrito de Bamako». Con el
@@ -321,16 +339,26 @@ export async function paginaComerciales(ctx) {
   }
 
   // ─── ZONAS ─────────────────────────────────────────────────────────────
+  // El boton de una zona, con su identificador estable.
+  function btnZona(z) {
+    const b = boton(z.nombre, () => {
+      st.zonaId = z.id
+      pintarMapa(); pintarZonas(); pintarPanelZona()
+    }, 'zona__nombre')
+    b.dataset.zonaId = String(z.id)
+    return b
+  }
   function pintarZonas() {
     if (!zonas.length) { zonaLista.replaceChildren(vacio('No hay zonas.')); return }
     zonaLista.replaceChildren(
       el('div', { class: 'zonas__rejilla' }, zonas.map((z) => el('div', {
         class: `zona${st.zonaId === z.id ? ' zona--activa' : ''}`,
       }, [
-        boton(z.nombre, () => {
-          st.zonaId = z.id
-          pintarMapa(); pintarZonas(); pintarPanelZona()
-        }, 'zona__nombre'),
+        // El identificador va en el `data-` y no en el texto: el texto es lo
+        // que ve la persona y puede cambiar en cualquier momento. Un
+        // identificador estable es lo que permite que una prueba o un
+        // enlace externo apunte a ESTA zona y no a la que se le parezca.
+        btnZona(z),
         el('span', { class: 'zona__datos', text: `${z.comercial ?? 0} comercial(es)` }),
         el('span', { class: tono(z.cumplimiento, z.tieneObjetivo), text: z.cumplimiento }),
       ]))),
