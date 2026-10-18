@@ -10,19 +10,33 @@
 -- abre de más ninguna puerta.
 --
 -- Pero la INTERFAZ necesita una sola pregunta: «¿esta pantalla es de
--- administrar o de consultar?». Y preguntar con cuatro permisos significa
--- que la interfaz dice una cosa y el servidor otra, y el día que uno se
+-- administrar o de consultar?». Preguntar con cuatro permisos significa que
+-- la interfaz dice una cosa y el servidor otra, y el día que uno se
 -- desincronice aparece el botón que no funciona o el botón que no está.
 --
 -- `commissions:manage` es la respuesta a esa pregunta, y SOLO para la
 -- interfaz. El servidor sigue exigiendo los finos: tener `manage` no
 -- permite confirmar un mes si no se tiene `approve`.
 --
--- Por eso esto NO amplía nada: `manage` no se comprueba en ninguna ruta. Es
--- una llave de lectura para la pantalla, no una llave de puerta.
+-- ── LA LISTA DE ACCIONES ─────────────────────────────────────────────────
 --
--- El comercial NO lo recibe: ve su estimation, que es otra cosa.
+-- `permissions.action` tenía una lista cerrada: view, create, edit, delete,
+-- approve, export. Se amplía con `manage`, que significa «administra este
+-- módulo» y solo se usa como llave de INTERFAZ.
 --
+-- La lista se amplía, no se sustituye: las seis acciones de siempre siguen
+-- valiendo igual, y los permisos que ya existían no se tocan. Una
+-- migración aplicada es inmutable; esto es una migración NUEVA que cambia
+-- una restricción, no una que la reescribe.
+--
+-- El comercial NO recibe `manage`: ve su estimación, que es otra cosa.
+--
+-- ═══════════════════════════════════════════════════════════════════════════
+
+ALTER TABLE permissions DROP CONSTRAINT IF EXISTS permissions_action_check;
+ALTER TABLE permissions ADD CONSTRAINT permissions_action_check
+  CHECK (action IN ('view','create','edit','delete','approve','export','manage'));
+
 INSERT INTO permissions (module, action) VALUES
   ('commissions','manage')
 ON CONFLICT (module, action) DO NOTHING;
