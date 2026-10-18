@@ -155,7 +155,7 @@ rutas.get('/comisiones/resumen/:periodo', auth, VER, async (req, res) => {
     periodo,
     desde: desde.toISOString().slice(0, 10),
     hasta: hasta.toISOString().slice(0, 10),
-    resúmenes,
+    resumenes,
   })
 })
 

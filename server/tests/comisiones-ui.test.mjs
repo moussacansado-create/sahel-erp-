@@ -98,7 +98,8 @@ try {
   // ═══════════════════════════════════════════════════════════════════════
   // EL COMERCIAL
   // ═══════════════════════════════════════════════════════════════════════
-  const p = await nav.newPage()
+  const ctxCom = await nav.createBrowserContext()
+  const p = await ctxCom.newPage()
   await p.setViewport({ width: 1400, height: 1000 })
   const erroresCom = []
   p.on('pageerror', (e) => erroresCom.push(String(e.message)))
@@ -187,7 +188,8 @@ try {
   // ═══════════════════════════════════════════════════════════════════════
   // EL ADMINISTRADOR
   // ═══════════════════════════════════════════════════════════════════════
-  const a = await nav.newPage()
+  const ctxAdm = await nav.createBrowserContext()
+  const a = await ctxAdm.newPage()
   await a.setViewport({ width: 1500, height: 1100 })
   const erroresAdm = []
   a.on('pageerror', (e) => erroresAdm.push(String(e.message)))
@@ -204,17 +206,24 @@ try {
   chk(hayFiltros.mes, 'A3 · hay selector de mes')
 
   // Elegir un comercial de verdad y ver qué sale.
+  // Se elige un comercial QUE TENGA DATOS. El panel de un comercial sin
+  // ventas enseña el estado vacio, que es lo correcto, pero no sirve para
+  // comprobar que el panel enseña las cifras.
   const elegido = await a.evaluate(async () => {
     const sel = document.querySelector('.comisiones select')
-    const op = [...sel.options].find((o) => o.value)
-    if (!op) return null
+    const opciones = [...sel.options].filter((o) => o.value)
     const s = Object.getOwnPropertyDescriptor(sel.constructor.prototype, 'value').set
-    s.call(sel, op.value)
-    sel.dispatchEvent(new Event('change', { bubbles: true }))
-    return op.value
+    for (const op of opciones) {
+      s.call(sel, op.value)
+      sel.dispatchEvent(new Event('change', { bubbles: true }))
+      await new Promise((r) => setTimeout(r, 2500))
+      const txt = document.querySelector('.comisiones')?.innerText || ''
+      if (/base cobrada/i.test(txt)) return { valor: op.value, nombre: op.textContent }
+    }
+    return null
   })
-  chk(!!elegido, `A4 · se elige un comercial (${elegido})`)
-  await pausa(5000)
+  chk(!!elegido, `A4 · se elige un comercial con datos (${elegido ? elegido.nombre : 'ninguno'})`)
+  await pausa(4000)
 
   const panelAdm = await textoVisible(a, '.comisiones')
   chk(/base cobrada/i.test(panelAdm), 'A5 · el panel muestra la base cobrada')
