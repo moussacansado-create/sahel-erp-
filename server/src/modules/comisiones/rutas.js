@@ -23,7 +23,7 @@ import { Router } from 'express'
 import { requiereSesion, requiereAlgunoDe, tienePermiso } from '../../security/permisos.js'
 import { one, query } from '../../db/client.js'
 import {
-  calcular, confirmarComision, detalle, historialPorcentajes, listar,
+  calcular, confirmarComision, descartarComision, detalle, historialPorcentajes, listar,
   periodoDe, ponerPorcentaje, prepararMes, porcentajeVigente, rangoDelPeriodo,
   registrarPago,
 } from '../../core/comisiones.js'
@@ -265,6 +265,16 @@ rutas.post('/comisiones/porcentajes', auth, CONFIGURAR, dominio(async (req, res)
     usuarioId: req.user.id,
   })
   res.json({ porcentaje: p })
+}))
+
+// ── DESCARTAR UN RESUMEN ───────────────────────────────────────────────────
+//
+// El administrador se ha equivocado al confirmar. Se devuelve el mes a
+// revisión y queda escrito quién, cuándo y por qué. No se borra nada.
+//
+rutas.post('/comisiones/:id/descartar', auth, CONFIRMAR, dominio(async (req, res) => {
+  const c = await descartarComision(id(req.params.id), req.user.id, req.body?.motivo)
+  res.json({ comision: c })
 }))
 
 export default rutas

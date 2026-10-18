@@ -463,6 +463,52 @@ export async function confirmarComision(comisionId, usuarioId, nota) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// DESCARTAR UN RESUMEN
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// El administrador se ha equivocado antes de tiempo: ha confirmado un mes con
+// una atribución equivocada. ¿Qué hace?
+//
+// NO se borra. Borrar la comisión de un mes es justo lo que este módulo
+// quiere evitar: el histórico tiene que decir que hubo una confirmación y
+// que se corrigió.
+//
+// Se DESCARTA: se devuelve el mes a «pendiente de revisión» y queda escrito
+// quién lo descartó, cuándo y por qué. Los pagos, si los hubiera, no se
+// tocan, y una comisión ya PAGADA no se descarta: esa se corrige con un
+// ajuste, no deshaciendo.
+//
+export async function descartarComision(comisionId, usuarioId, motivo) {
+  if (!motivo || String(motivo).trim().length < 3) {
+    throw new Error('Hay que decir por qué se descarta. Queda escrito.')
+  }
+  return transaction(async (tx) => {
+    const c = await tx.one('SELECT * FROM com_comisiones WHERE id = $1', [comisionId])
+    if (!c) throw new Error('Esa comisión no existe.')
+    if (c.estado === 'PAGADA') {
+      throw new Error('Una comisión pagada no se descarta: se corrige con un ajuste.')
+    }
+    const devuelta = await tx.one(
+      `UPDATE com_comisiones
+          SET base_confirmada = NULL, porcentaje_confirmado = NULL, comision_confirmada = NULL,
+              confirmado_por = NULL, confirmado_en = NULL, nota_confirmacion = NULL,
+              estado = 'PENDIENTE_REVISION', updated_at = now()
+        WHERE id = $1 RETURNING *`,
+      [comisionId],
+    )
+    await tx.query(
+      `INSERT INTO com_comision_auditoria
+         (comision_id, comercial_id, periodo, accion, valor_anterior, valor_nuevo, motivo, usuario_id)
+       VALUES ($1,$2,$3,'comision_descartada',$4,NULL,$5,$6)`,
+      [comisionId, c.comercial_id, c.periodo,
+        c.comision_confirmada !== null ? String(c.comision_confirmada) : null,
+        String(motivo).trim(), usuarioId],
+    )
+    return devuelta
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // EL PAGO
 // ═══════════════════════════════════════════════════════════════════════════
 //

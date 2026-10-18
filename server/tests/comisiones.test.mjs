@@ -139,6 +139,17 @@ try {
     `R4c · el segundo cobro del mismo pedido se controla (HTTP ${cob2.status})`)
   chk(cob2.status === 409, `R4d · el segundo cobro se rechaza con 409 (HTTP ${cob2.status})`)
 
+  // ── 0 · EMPEZAR DE CERO ────────────────────────────────────────────────
+  // El módulo RESPETA una comisión confirmada: no la pisa. Si una prueba
+  // anterior dejó una confirmada, hay que apartarla, y se hace por la vía
+  //Prevista: el descarte auditado, que deja rastro de por qué.
+  const previas = await api(admin, `/api/comisiones?comercial_id=${comercialId}&anio=2026`)
+  for (const c of (previas.body?.comisiones || [])) {
+    if (c.estado !== 'PAGADA') {
+      await api(admin, `/api/comisiones/${c.id}/descartar`, 'POST', { motivo: 'Prueba automatica: se repite' })
+    }
+  }
+
   // ── 1 · EL PORCENTAJE Y LA ESTIMACIÓN ──────────────────────────────────
   const pct = await api(admin, '/api/comisiones/porcentajes', 'POST', {
     comercial_id: comercialId, porcentaje: 3, vigente_desde: '2026-10-01', motivo: 'Prueba automatica',
