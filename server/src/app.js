@@ -22,6 +22,7 @@ import albaranesRoutes from './modules/albaranes/rutas.js'
 import ventasRoutes from './modules/ventas/rutas.js'
 import comprasRoutes from './modules/compras/rutas.js'
 import comercialesRoutes from './modules/comerciales/rutas.js'
+import comisionesRoutes from './modules/comisiones/rutas.js'
 import syncRoutes from './modules/sync/rutas.js'
 import { requiereSesion } from './security/permisos.js'
 
@@ -67,6 +68,7 @@ export function createApp(opciones = {}) {
   app.use('/api', ventasRoutes)
     // Comerciales después de ventas: define `/zonas`, que el reparto también usa.
     app.use('/api', comercialesRoutes)
+  app.use('/api', comisionesRoutes)
 
   // ── Interfaz web ────────────────────────────────────────────────────────
   // Se monta DESPUÉS de /api para que ninguna ruta de la API quede tapada por
