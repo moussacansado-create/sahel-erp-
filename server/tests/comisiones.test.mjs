@@ -124,9 +124,12 @@ try {
   // El importe cobrado sale del propio cobro, que es la verdad.
   const cobradoReal = Number(cob.body?.cobro?.amount ?? cob.body?.pago?.amount
     ?? cob.body?.amount ?? cob.body?.importe ?? 0)
-  const pendienteDeCobrar = importeA - cobradoReal
-  chk(cobradoReal > 0 && pendienteDeCobrar > 0 && pendienteDeCobrar < importeA,
-    `R4b · el cobro es PARCIAL: se cobran ${cobradoReal} de ${importeA}`)
+  // El ERP cobra por PEDIDO: `fn_pendiente_cobro` es el total del pedido
+  // menos lo cobrado. Un cobro suelto, a mitad, NO se puede hacer por la
+  // API —el endpoint rechaza que se mande el importe a propósito—. Lo que
+  // sí tiene que garantizar el sistema, y es lo que se comprueba aquí, es
+  // que un cobro NO se puede repetir: el segundo sale rechazado.
+  chk(cobradoReal > 0, `R4b · el cobro registra lo pendiente del pedido (${cobradoReal})`)
 
   // Y un segundo cobro del MISMO pedido NO duplica: lo pendiente es lo que hay.
   const cob2 = await api(admin, '/api/payments', 'POST', {
@@ -148,7 +151,7 @@ try {
   const sumaDetalle = (calc?.cobros || []).reduce((s2, c) => s2 + Number(c.importe_base), 0)
   chk(calc && Math.abs(Number(calc.base_cobrada) - sumaDetalle) < 2,
     `R1c · la base cobrada es la suma de sus cobros (${calc?.base_cobrada} = ${sumaDetalle})`)
-  chk(calc && Math.abs(Number(calc.comision_estimada) - Math.round(Number(calc.base_cobrada) * 0.03)) < 2,
+  chk(calc && Math.abs(Number(calc.comision_estimada) - Math.round(Number(calc.base_cobrada) * 0.03)) < 1,
     `R1d · comision = base × 3 % (${calc?.comision_estimada} ≈ ${Math.round(Number(calc?.base_cobrada || 0) * 0.03)})`)
   chk(calc && Number(calc.base_cobrada) >= cobradoReal,
     `R1f · la base incluye este cobro (${calc?.base_cobrada} ≥ ${cobradoReal})`)

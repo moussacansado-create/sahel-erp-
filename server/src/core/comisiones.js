@@ -273,7 +273,7 @@ export async function calcular(comercialId, periodo) {
 
   const pct = await porcentajeVigente(comercialId, desde)
   const porcentaje = pct ? Number(pct.porcentaje) : null
-  const comisionEstimada = porcentaje === null ? 0 : redondear(baseCobrada * porcentaje / 100)
+  const comisionEstimada = porcentaje === null ? 0 : redondearComision(baseCobrada * porcentaje / 100, mon)
 
   return {
     comercial_id: comercialId,
@@ -298,6 +298,17 @@ export async function calcular(comercialId, periodo) {
 // el total de los detalles no cuadre con el total del resumen.
 function redondear(n) {
   return Math.round(Number(n) * 100) / 100
+}
+
+// EL FCFA NO TIENE CÉNTIMOS.
+//
+// La base se guarda con decimales porque el ERP los usa para otros cálculos,
+// pero una comisión de 2.722,5 FCFA no existe: no hay medio franco. En la
+// moneda base del ERP el resultado se redondea a la unidad, que es como se
+// paga de verdad. En una moneda con decimales, se queda con dos.
+function redondearComision(n, mon) {
+  const v = Number(n)
+  return mon === 'XOF' ? Math.round(v) : Math.round(v * 100) / 100
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -419,11 +430,16 @@ export async function confirmarComision(comisionId, usuarioId, nota) {
     if (c.porcentaje_aplicado === null || c.porcentaje_aplicado === undefined) {
       throw new Error('No hay porcentaje aplicable. Pon uno antes de confirmar.')
     }
-    // La base se recalcula AHORA, no se copia la de hace un rato: el
-    // administrador confirma lo que ve, y lo que ve es el estado actual.
-    const calc = await calcular(c.comercial_id, c.periodo)
-    const base = calc.base_cobrada
-    const comision = redondear(base * Number(c.porcentaje_aplicado) / 100)
+    // LA BASE APROBADA ES LA QUE EL ADMINISTRADOR REVISÓ.
+    //
+    // No se recalcula al confirmar. Si se recalculara, podría dar un número
+    // distinto del que el administrador tenía delante, y lo que se firmaría
+    // no sería lo que se aprobó. Lo que se congela es lo revisado.
+    //
+    // (Además: recalcular dentro de la transacción abría una segunda
+    // conexión y devolvía un cero. Un snapshot no se recalcula: se congela.)
+    const base = Number(c.base_cobrada)
+    const comision = redondearComision(base * Number(c.porcentaje_aplicado) / 100, c.moneda)
 
     const guardada = await tx.one(
       `UPDATE com_comisiones
@@ -440,7 +456,7 @@ export async function confirmarComision(comisionId, usuarioId, nota) {
          (comision_id, comercial_id, periodo, accion, valor_anterior, valor_nuevo, motivo, usuario_id)
        VALUES ($1,$2,$3,'comision_confirmada',$4,$5,$6,$7)`,
       [comisionId, c.comercial_id, c.periodo,
-        String(calc.base_cobrada), String(comision), nota || null, usuarioId],
+        String(base), String(comision), nota || null, usuarioId],
     )
     return guardada
   })
