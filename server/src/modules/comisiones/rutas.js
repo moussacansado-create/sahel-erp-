@@ -41,7 +41,13 @@ function dominio(fn) {
     try {
       await fn(req, res)
     } catch (e) {
-      const estado = e.estado || e.status || (e.codigo ? 400 : 500)
+      // Un error SIN código es un error de dominio: «el importe tiene que ser
+      // mayor que cero», «no hay porcentaje aplicable». Es una respuesta a
+      // quien pregunta, no un fallo del servidor. Solo lo que de verdad es
+      // inesperado (un TypeError, un fallo de base de datos) es un 500.
+      const inesperado = e instanceof TypeError || e instanceof ReferenceError
+        || e.name === 'DatabaseError' || e.code === 'ECONNREFUSED'
+      const estado = e.estado || e.status || (inesperado ? 500 : 400)
       if (estado >= 500) {
         console.error('[comisiones]', e)
         return res.status(500).json({ error: 'Error interno del servidor', codigo: 'ERROR_INTERNO' })
