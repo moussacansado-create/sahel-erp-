@@ -174,6 +174,17 @@ try {
   chk(devuelto.ok, 'R5c · la prueba se revierte: la zona queda como estaba')
   await pausa(4000)
 
+  // La verdad de la asignacion: la API, no el formulario. Comparar el
+  // formulario consigo mismo no demuestra nada.
+  const verdad = await p.evaluate(async (id) => {
+    const r = await fetch(`/api/comerciales/zona/${id}/gestion`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } })
+    const d = await r.json()
+    const p2 = (d.asignados || []).find((a) => a.es_principal)
+    return p2 ? { id: String(p2.comercial_id), nombre: p2.full_name } : null
+  }, String(zid))
+  chk(!!verdad, `R6b · la API dice quien es el responsable (${verdad ? verdad.nombre : 'ninguno'})`)
+
   // ── 6 · TRAS RECARGAR, LA ASIGNACIÓN SIGUE AHÍ ──────────────────────────
   await p.reload({ waitUntil: 'networkidle2' })
   await pausa(7000)
@@ -202,8 +213,8 @@ try {
   const cartera = await p.evaluate((nom) => {
     const t = document.body.innerText
     return { existe: !!nom && t.includes(nom), largo: t.length }
-  }, guardado.originalNombre)
-  chk(cartera.existe, `R7 · el comercial responsable aparece en la pantalla (${guardado.originalNombre})`)
+  }, verdad ? verdad.nombre : '')
+  chk(cartera.existe, `R7 · el comercial responsable aparece en la pantalla (${verdad ? verdad.nombre : '?'})`)
 
   // ── 8 · EL MAPA NACIONAL NO SE HA ROTO ──────────────────────────────────
   const nacional = await p.evaluate(() => {
