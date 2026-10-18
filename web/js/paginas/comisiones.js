@@ -75,7 +75,7 @@ const dinero = (v, moneda = 'XOF') => `${num(v, 0)} ${moneda}`
  * La barra de la comisión. Sirve para las dos eligencias: cambia lo que
  * enseña, no de dónde viene el número.
  */
-function barraComision(c, mon) {
+function barraComision(c, mon, o = {}) {
   const filas = [
     ['Base cobrada en el mes', dinero(c.base_cobrada, mon), 'Lo cobrado de verdad'],
     ['Pendiente de cobro', dinero(c.base_pendiente, mon), 'Vendido y aún no cobrado'],
@@ -84,8 +84,34 @@ function barraComision(c, mon) {
   ]
   return el('div', { class: 'rejilla-metricas' }, [
     ...filas.map(([et, va, no]) => metrica(et, va, no)),
-    metrica('Comisión estimada', dinero(c.comision_estimada, mon), 'Provisional hasta que se confirme'),
+    metrica(o.etiquetaComision || 'Comisión estimada', dinero(c.comision_estimada, mon),
+      o.notaComision || 'Provisional hasta que se confirme'),
   ])
+}
+
+/**
+ * Las cifras que se enseñan de un periodo.
+ *
+ * Si el mes está CONFIRMADO, lo que vale es lo que se confirmó: la base y el
+ * importe de entonces. Enseñar la estimación de ahora al lado de la comisión
+ * confirmada daría dos cifras distintas de lo mismo, y quien mira compararía.
+ */
+function cifrasDe(calculo, comision) {
+  const confirmado = comision?.comision_confirmada !== null
+    && comision?.comision_confirmada !== undefined
+  if (!confirmado) {
+    return { c: calculo, etiqueta: 'Comisión estimada', nota: 'Provisional hasta que se confirme' }
+  }
+  return {
+    c: {
+      ...calculo,
+      base_cobrada: Number(comision.base_confirmada ?? calculo.base_cobrada),
+      porcentaje_aplicado: Number(comision.porcentaje_confirmado ?? calculo.porcentaje_aplicado),
+      comision_estimada: Number(comision.comision_confirmada ?? calculo.comision_estimada),
+    },
+    etiqueta: 'Comisión confirmada',
+    nota: 'Congelada al confirmar el periodo',
+  }
 }
 
 /** La tabla de cobros, con lo verificado y lo que no, SEPARADOS. */
@@ -198,12 +224,7 @@ async function pantallaComercial(raiz) {
     // lo que vale es lo que se confirmó: la base y el importe de entonces.
     // Enseñar la estimación de ahora al lado de la comisión confirmada
     // daría dos cifras distintas de lo mismo, y la gente compararía.
-    const mostrado = provisional ? c : {
-      ...c,
-      base_cobrada: Number(com.base_confirmada ?? c.base_cobrada),
-      porcentaje_aplicado: Number(com.porcentaje_confirmado ?? c.porcentaje_aplicado),
-      comision_estimada: Number(com.comision_confirmada ?? c.comision_estimada),
-    }
+    const { c: mostrado, etiqueta: etiquetaComision, nota: notaComision } = cifrasDe(c, com)
 
     cuerpo.replaceChildren(
       panel('Mi comisión de ' + nombreDePeriodo(periodo),
@@ -225,7 +246,7 @@ async function pantallaComercial(raiz) {
                   : 'Pendiente de pago.',
               }),
             ]),
-          barraComision(mostrado, mon),
+          barraComision(mostrado, mon, { etiquetaComision, notaComision }),
           panel('De dónde sale la base', null, el('div', { class: 'pila' }, [
             el('p', { class: 'pista', text: 'Los cobros del mes, con lo verificado y lo que aún no.' }),
             tablaCobros(c.cobros, c.cobros_pendientes, c.cobros_rechazados, mon),
@@ -353,10 +374,11 @@ async function pantallaAdmin(raiz) {
     const mon = c.moneda || 'XOF'
     const cab = com?.estado ? ESTADOS[com.estado] : ESTADOS.EN_CURSO
 
+    const { c: mostrado, etiqueta: etiquetaComision, nota: notaComision } = cifrasDe(c, com)
     barra.replaceChildren(
       panel(`Revisión de ${nombreDePeriodo(periodo)}`, [estado(cab.texto, cab.tono)],
         el('div', { class: 'pila' }, [
-          barraComision(c, mon),
+          barraComision(mostrado, mon, { etiquetaComision, notaComision }),
           com?.comision_confirmada != null
             ? el('div', { class: 'aviso aviso--bien' }, [
               el('strong', { text: 'Comisión confirmada: ' }),
@@ -509,6 +531,9 @@ async function pantallaAdmin(raiz) {
       }
     }
 
+    if (!acciones.children.length) {
+      acciones.append(el('p', { class: 'pista', text: 'Este periodo ya no tiene nada pendiente: está pagado.' }))
+    }
     detalle.replaceChildren(
       el('div', { class: 'pila' }, [
         panel('Acciones del periodo', null, acciones),

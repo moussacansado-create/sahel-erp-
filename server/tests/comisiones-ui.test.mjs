@@ -246,6 +246,36 @@ try {
   chk(detalleAdm.porcentajes > 0, `A11 · el panel muestra el historial de porcentajes (${detalleAdm.porcentajes})`)
   chk(detalleAdm.auditoria > 0, `A12 · el panel muestra la auditoría (${detalleAdm.auditoria})`)
 
+  // UN MES CONFIRMADO ENSEÑA SU CIFRA CONGELADA, NO LA ESTIMACIÓN VIVA.
+  //
+  // El panel puede enseñar las dos: la estimación de ahora y la comisión
+  // confirmada. Si se mezclan en el mismo sitio, quien mira ve dos cifras
+  // distintas de lo mismo y no sabe cuál vale. Las dos tienen que ser la
+  // misma cuando el mes está confirmado.
+  const coherencia = await a.evaluate(() => {
+    const metricas = [...document.querySelectorAll('.comisiones .metrica')]
+    const por = (t) => metricas.find((m) => (m.querySelector('.metrica__etiqueta')?.textContent || '').includes(t))
+    const num = (m) => (m?.querySelector('.metrica__valor')?.textContent || '').replace(/[^0-9]/g, '')
+    const caja = document.querySelector('.comisiones .aviso--bien')
+    return {
+      etiquetaComision: (por('Comisión')?.querySelector('.metrica__etiqueta')?.textContent || '').trim(),
+      valor: num(por('Comisión')),
+      confirmado: (caja?.textContent || '').replace(/[^0-9]/g, '').slice(0, 12),
+      texto: document.body.innerText,
+    }
+  })
+  const esConfirmada = /confirmada/i.test(coherencia.etiquetaComision)
+  chk(/confirmada|pagada/i.test(coherencia.etiquetaComision)
+    || !/comisi/i.test(coherencia.texto),
+    `A12b · el mes confirmado lo dice en la cifra («${coherencia.etiquetaComision}»)`)
+  if (esConfirmada) {
+    chk(coherencia.confirmado.startsWith(coherencia.valor)
+      || coherencia.valor.startsWith(coherencia.confirmado),
+      `A12c · la cifra de la barra es la MISMA que la confirmada (${coherencia.valor} vs ${coherencia.confirmado})`)
+  } else {
+    chk(true, 'A12c · el mes no esta confirmado: la barra muestra la estimación')
+  }
+
   const textoAcciones = await a.evaluate(() => document.body.innerText)
   chk(/Confirmar comisión|Preparar el mes|Descartar|Marcar como pagada|Revisión de/.test(textoAcciones),
     'A13 · el panel ofrece las acciones del periodo')
