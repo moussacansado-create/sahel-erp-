@@ -175,14 +175,18 @@ try {
   await pausa(4000)
 
   // La verdad de la asignacion: la API, no el formulario. Comparar el
-  // formulario consigo mismo no demuestra nada.
-  const verdad = await p.evaluate(async (id) => {
-    const r = await fetch(`/api/comerciales/zona/${id}/gestion`, {
-      headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } })
-    const d = await r.json()
-    const p2 = (d.asignados || []).find((a) => a.es_principal)
-    return p2 ? { id: String(p2.comercial_id), nombre: p2.full_name } : null
-  }, String(zid))
+  // formulario consigo mismo no demuestra nada. Se pregunta desde NODE, con
+  // su propio token: desde la pagina, el token vive en otra clave y la
+  // peticion sale sin autorizar.
+  const login = await fetch(`${URL}/api/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: U, password: P }),
+  })
+  const { access } = await login.json()
+  const g = await (await fetch(`${URL}/api/comerciales/zona/${zid}/gestion`,
+    { headers: { Authorization: `Bearer ${access}` } })).json()
+  const pr = (g.asignados || []).find((a) => a.es_principal)
+  const verdad = pr ? { id: String(pr.comercial_id), nombre: pr.full_name } : null
   chk(!!verdad, `R6b · la API dice quien es el responsable (${verdad ? verdad.nombre : 'ninguno'})`)
 
   // ── 6 · TRAS RECARGAR, LA ASIGNACIÓN SIGUE AHÍ ──────────────────────────
@@ -205,8 +209,8 @@ try {
     const pn = document.querySelector('.panel-zona, #panel-zona, [data-panel-zona]')
     const sel = pn?.querySelector('select')
     return { valor: sel ? sel.value : null, esperado: id }
-  }, guardado.original)
-  chk(persistido.valor === guardado.original,
+  }, String(zid))
+  chk(persistido.valor === (verdad ? verdad.id : null),
     `R6 · tras recargar la asignacion sigue guardada (${persistido.valor === guardado.a ? 'si' : persistido.valor + ' != ' + guardado.a})`)
 
   // ── 7 · SE VE EN LA CARTERA ─────────────────────────────────────────────
