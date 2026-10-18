@@ -214,9 +214,14 @@ try {
     `R6 · tras recargar la asignacion sigue guardada (${persistido.valor === guardado.a ? 'si' : persistido.valor + ' != ' + guardado.a})`)
 
   // ── 7 · SE VE EN LA CARTERA ─────────────────────────────────────────────
+  // El nombre del responsable se busca donde esta de verdad: en la opcion
+  // seleccionada del selector. Un `<option>` NO forma parte del `innerText`
+  // del cuerpo, y por eso la prueba anterior no lo encontraba nunca.
   const cartera = await p.evaluate((nom) => {
-    const t = document.body.innerText
-    return { existe: !!nom && t.includes(nom), largo: t.length }
+    const pn = document.querySelector('.panel-zona, #panel-zona, [data-panel-zona]')
+    const sel = pn?.querySelector('select')
+    const opcion = sel?.selectedOptions[0]?.textContent.trim() || ''
+    return { opcion, existe: !!nom && (opcion.includes(nom) || document.body.innerText.includes(nom)) }
   }, verdad ? verdad.nombre : '')
   chk(cartera.existe, `R7 · el comercial responsable aparece en la pantalla (${verdad ? verdad.nombre : '?'})`)
 
