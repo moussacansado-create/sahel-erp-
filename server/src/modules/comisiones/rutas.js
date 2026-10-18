@@ -191,6 +191,25 @@ rutas.get('/comisiones/mi/:periodo', auth, VER, async (req, res) => {
 })
 
 // ── EL DETALLE ─────────────────────────────────────────────────────────────
+rutas.get('/comisiones/porcentajes', auth, VER, async (req, res) => {
+  const a = await alcance(req, res)
+  if (!a) return
+  if (!a.administra) {
+    // El comercial solo ve el suyo, y su historial. No los de los demás.
+    const p = await porcentajeVigente(a.comercialId)
+    res.json({ porcentajes: p ? [p] : [] })
+    return
+  }
+  const filas = await query(
+    `SELECT p.*, cp.user_id, u.full_name AS comercial_nombre
+       FROM com_comision_porcentajes p
+       JOIN com_perfiles cp ON cp.id = p.comercial_id
+       JOIN users u ON u.id = cp.user_id
+      ORDER BY u.full_name, p.vigente_desde DESC`,
+  )
+  res.json({ porcentajes: filas })
+})
+
 rutas.get('/comisiones/:id', auth, VER, async (req, res) => {
   const a = await alcance(req, res)
   if (!a) return
@@ -233,25 +252,6 @@ rutas.post('/comisiones/:id/pagar', auth, PAGAR, dominio(async (req, res) => {
 }))
 
 // ── LOS PORCENTAJES ────────────────────────────────────────────────────────
-rutas.get('/comisiones/porcentajes', auth, VER, async (req, res) => {
-  const a = await alcance(req, res)
-  if (!a) return
-  if (!a.administra) {
-    // El comercial solo ve el suyo, y su historial. No los de los demás.
-    const p = await porcentajeVigente(a.comercialId)
-    res.json({ porcentajes: p ? [p] : [] })
-    return
-  }
-  const filas = await query(
-    `SELECT p.*, cp.user_id, u.full_name AS comercial_nombre
-       FROM com_comision_porcentajes p
-       JOIN com_perfiles cp ON cp.id = p.comercial_id
-       JOIN users u ON u.id = cp.user_id
-      ORDER BY u.full_name, p.vigente_desde DESC`,
-  )
-  res.json({ porcentajes: filas })
-})
-
 rutas.get('/comisiones/porcentajes/:comercialId', auth, VER, async (req, res) => {
   const a = await alcance(req, res)
   if (!a) return

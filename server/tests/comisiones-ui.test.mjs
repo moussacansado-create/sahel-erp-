@@ -216,13 +216,16 @@ try {
     for (const op of opciones) {
       s.call(sel, op.value)
       sel.dispatchEvent(new Event('change', { bubbles: true }))
-      await new Promise((r) => setTimeout(r, 2500))
-      const txt = document.querySelector('.comisiones')?.innerText || ''
-      if (/base cobrada/i.test(txt)) return { valor: op.value, nombre: op.textContent }
+      await new Promise((r) => setTimeout(r, 3000))
+      // Se busca a quien TIENE COBROS, no a quien tenga la palabra «base»
+      // escrita: el panel de un comercial sin ventas enseña el estado
+      // vacío, que es lo correcto pero no sirve para comprobar nada.
+      const filas = document.querySelectorAll('.tabla--cobros tbody tr').length
+      if (filas > 0) return { valor: op.value, nombre: op.textContent, filas }
     }
     return null
   })
-  chk(!!elegido, `A4 · se elige un comercial con datos (${elegido ? elegido.nombre : 'ninguno'})`)
+  chk(!!elegido, `A4 · se elige un comercial con cobros (${elegido ? elegido.nombre + ' (' + elegido.filas + ' cobros)' : 'ninguno'})`)
   await pausa(4000)
 
   const panelAdm = await textoVisible(a, '.comisiones')
