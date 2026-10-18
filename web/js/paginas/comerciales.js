@@ -388,6 +388,21 @@ export async function paginaComerciales(ctx) {
     const pct = el('input', { type: 'number', min: '0', max: '100', placeholder: '% de la zona', value: '50' })
     const prio = el('input', { type: 'checkbox' })
 
+    // EL FORMULARIO VIENE CON QUIEN ES EL RESPONSABLE PUESTO.
+    //
+    // Antes salía vacío, con el primer comercial de la lista y la casilla de
+    // «principal» sin marcar. Guardaba eso como un socio al 50% y el
+    // responsable de verdad seguía siendo otro, sin que se entendiera muy
+    // bien qué había pasado. Ahora, si la zona tiene responsable, viene
+    // puesto y marcado como principal: cambiarlo y guardar CAMBIA el
+    // responsable, que es lo que se viene a hacer.
+    const principal = (g.asignados || []).find((a) => a.es_principal)
+    if (principal) {
+      sel.value = String(principal.comercial_id)
+      prio.checked = true
+      if (pct.value === '' || pct.value === null) pct.value = '100'
+    }
+
     const box = el('div', { class: 'asignar' }, [
       el('div', { class: 'asignar__fila' }, [
         el('label', { class: 'etiqueta', text: 'Comercial para asignar' }),

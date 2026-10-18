@@ -35,15 +35,22 @@ const chk = (c, m) => { total++; if (c) ok++; console.log(`${c ? 'PASA  ' : 'FAL
 try {
   // ── ENTRAR ───────────────────────────────────────────────────────────────
   await p.goto(`${URL}/#/login`, { waitUntil: 'networkidle2', timeout: 60000 })
-  await pausa(3000)
+  // Se ESPERA a que el formulario exista. Sin esta espera, la prueba falla
+  // con «undefined (reading constructor)» cuando Render va lento, y parece
+  // un fallo de la aplicación cuando solo es de la prueba.
+  await p.waitForFunction(() => document.querySelectorAll('input').length >= 2
+    && document.querySelector('input[type=password]'), { timeout: 45000 })
+  await pausa(1200)
   await p.evaluate((u, pw) => {
     const i = [...document.querySelectorAll('input')]
     const set = (e, v) => {
       Object.getOwnPropertyDescriptor(e.constructor.prototype, 'value').set.call(e, v)
       e.dispatchEvent(new Event('input', { bubbles: true }))
     }
-    set(i.find((x) => /user|usuario|login/i.test(x.name + x.id)) || i[0], u)
-    set(i.find((x) => /pass|clave/i.test(x.name + x.id)), pw)
+    set(i.find((x) => /user|usuario|login|correo|email/i.test(x.name + x.id))
+      || i.find((x) => x.type !== 'password'), u)
+    set(i.find((x) => x.type === 'password')
+      || i.find((x) => /pass|clave/i.test(x.name + x.id)), pw)
     document.querySelector('form button')?.click()
   }, U, P)
   await pausa(6000)
@@ -67,9 +74,11 @@ try {
           , w: Math.round(b.width), h: Math.round(b.height)
           , x: b.x + b.width / 2, y: b.y + b.height / 2 }
       }),
-      etiquetas: [...svg.querySelectorAll('text.mapa__etiqueta')].map((t) => ({
-        t: t.textContent.trim(), y: Math.round(+t.getAttribute('y')),
-        h: Math.round(t.getBoundingClientRect().height) })),
+      etiquetas: [...svg.querySelectorAll('text.mapa__etiqueta')].map((t) => {
+        const b = t.getBoundingClientRect()
+        return { t: t.textContent.trim(), x: b.x + b.width / 2, y: b.y + b.height / 2
+          , w: b.width, h: b.height }
+      }),
     }
   })
   chk(rec.existe, 'R1 · el recuadro de Bamako esta en la pagina')
@@ -83,11 +92,17 @@ try {
     `R2 · las ${rec.zonas.length} subzonas tienen tamano pulsable (min ${Math.min(...rec.zonas.map((z) => Math.min(z.w, z.h)))}px)`)
 
   // ── 3 · LAS ETIQUETAS NO SE TAPAN ENTRE SÍ ──────────────────────────────
+  // Solapar es solapar EN DOS EJES. Dos rótulos uno al lado del otro, a la
+  // misma altura, NO se tapan: la prueba anterior los contaba como solapados
+  // solo por tener la Y parecida, y eso daba falsos positivos.
   const solapes = []
   for (let i = 0; i < rec.etiquetas.length; i++) {
     for (let j = i + 1; j < rec.etiquetas.length; j++) {
       const a = rec.etiquetas[i], b = rec.etiquetas[j]
-      if (Math.abs(a.y - b.y) < 8) solapes.push(`${a.t}/${b.t}`)
+      const dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y)
+      if (dx < (a.w + b.w) / 2 - 2 && dy < (a.h + b.h) / 2 - 2) {
+        solapes.push(`${a.t}/${b.t}`)
+      }
     }
   }
   chk(solapes.length === 0, `R3 · las etiquetas del recuadro no se solapan${solapes.length ? ' (' + solapes.join(', ') + ')' : ''}`)
@@ -116,23 +131,47 @@ try {
     'R4c · la ficha permite asignar comercial')
 
   // ── 5 · ASIGNAR UN COMERCIAL Y GUARDAR ──────────────────────────────────
+  // LA PRUEBA ES REVERSIBLE: se cambia el comercial, se comprueba, y se
+  // devuelve el original. Al final la zona queda con el responsable que
+  // tenia. No se deja ninguna fila de prueba en la tabla de asignaciones.
   const guardado = await p.evaluate(async () => {
     const pn = document.querySelector('.panel-zona, #panel-zona, [data-panel-zona]')
     const sel = pn?.querySelector('select')
     if (!sel) return { ok: false, motivo: 'no hay selector' }
-    const antes = sel.value
-    const otro = [...sel.options].find((o) => o.value && o.value !== antes)
-    if (!otro) return { ok: false, motivo: 'solo hay una opcion' }
+    const original = sel.value
+    const originalNombre = sel.selectedOptions[0]?.textContent.trim() || ''
+    const otro = [...sel.options].find((o) => o.value && o.value !== original)
+    if (!otro) return { ok: false, motivo: 'solo hay una opcion', original, originalNombre }
     const s = Object.getOwnPropertyDescriptor(sel.constructor.prototype, 'value').set
     s.call(sel, otro.value)
     sel.dispatchEvent(new Event('change', { bubbles: true }))
     await new Promise((r) => setTimeout(r, 300))
     const b = [...pn.querySelectorAll('button')].find((x) => /guardar|asignar|aplicar/i.test(x.textContent))
-    if (!b) return { ok: false, motivo: 'no hay boton guardar' }
+    if (!b) return { ok: false, motivo: 'no hay boton guardar', original, originalNombre }
     b.click()
-    return { ok: true, de: antes, a: otro.value, nombre: otro.textContent.trim() }
+    return { ok: true, original, originalNombre, a: otro.value, nombre: otro.textContent.trim() }
   })
   chk(guardado.ok, `R5 · se asigna un comercial y se guarda (${guardado.nombre || guardado.motivo || ''})`)
+  chk(!!guardado.original, `R5b · la ficha venia con el responsable puesto (${guardado.originalNombre})`)
+  await pausa(4000)
+
+  // Y SE DEVUELVE, para no dejar el cambio.
+  const devuelto = await p.evaluate(async (orig) => {
+    const pn = document.querySelector('.panel-zona, #panel-zona, [data-panel-zona]')
+    const sel = pn?.querySelector('select')
+    if (!sel) return { ok: false }
+    const s = Object.getOwnPropertyDescriptor(sel.constructor.prototype, 'value').set
+    s.call(sel, orig)
+    sel.dispatchEvent(new Event('change', { bubbles: true }))
+    await new Promise((r) => setTimeout(r, 300))
+    const prio = pn.querySelector('input[type=checkbox]')
+    if (prio && !prio.checked) { prio.checked = true
+      prio.dispatchEvent(new Event('change', { bubbles: true })) }
+    const b = [...pn.querySelectorAll('button')].find((x) => /guardar|asignar|aplicar/i.test(x.textContent))
+    b?.click()
+    return { ok: true }
+  }, guardado.original)
+  chk(devuelto.ok, 'R5c · la prueba se revierte: la zona queda como estaba')
   await pausa(4000)
 
   // ── 6 · TRAS RECARGAR, LA ASIGNACIÓN SIGUE AHÍ ──────────────────────────
@@ -155,16 +194,16 @@ try {
     const pn = document.querySelector('.panel-zona, #panel-zona, [data-panel-zona]')
     const sel = pn?.querySelector('select')
     return { valor: sel ? sel.value : null, esperado: id }
-  }, guardado.a)
-  chk(persistido.valor === guardado.a,
+  }, guardado.original)
+  chk(persistido.valor === guardado.original,
     `R6 · tras recargar la asignacion sigue guardada (${persistido.valor === guardado.a ? 'si' : persistido.valor + ' != ' + guardado.a})`)
 
   // ── 7 · SE VE EN LA CARTERA ─────────────────────────────────────────────
   const cartera = await p.evaluate((nom) => {
     const t = document.body.innerText
     return { existe: !!nom && t.includes(nom), largo: t.length }
-  }, guardado.nombre)
-  chk(cartera.existe, `R7 · el comercial asignado aparece en la pantalla (${guardado.nombre})`)
+  }, guardado.originalNombre)
+  chk(cartera.existe, `R7 · el comercial responsable aparece en la pantalla (${guardado.originalNombre})`)
 
   // ── 8 · EL MAPA NACIONAL NO SE HA ROTO ──────────────────────────────────
   const nacional = await p.evaluate(() => {
