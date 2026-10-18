@@ -56,7 +56,7 @@ let importeA = 0, importeB = 0, cobradoA = 0
 
 try {
   // ── 0 · EL CLIENTE Y EL ARTÍCULO ───────────────────────────────────────
-  const cl = await api(admin, '/api/customers')
+  const cl = await api(admin, '/api/customers?limit=500&includeArchived=1')
   const clientes = cl.body?.customers || cl.body?.clientes || []
   let cliente = clientes.find((c) => String(c.name || '').includes(MARCA))
   if (!cliente) {
@@ -144,10 +144,18 @@ try {
   // anterior dejó una confirmada, hay que apartarla, y se hace por la vía
   //Prevista: el descarte auditado, que deja rastro de por qué.
   const previas = await api(admin, `/api/comisiones?comercial_id=${comercialId}&anio=2026`)
+  let yaEstaPagada = false
   for (const c of (previas.body?.comisiones || [])) {
-    if (c.estado !== 'PAGADA') {
+    if (c.estado === 'PAGADA') {
+      // Una comision PAGADA es inmutable: no se descarta, no se vuelve a
+      // confirmar. Se avisa y se salta la parte que la vuelve a tocar.
+      yaEstaPagada = true
+    } else {
       await api(admin, `/api/comisiones/${c.id}/descartar`, 'POST', { motivo: 'Prueba automatica: se repite' })
     }
+  }
+  if (yaEstaPagada) {
+    console.log('  · el mes ya estaba PAGADO: se comprueba lo que se puede y no se toca')
   }
 
   // ── 1 · EL PORCENTAJE Y LA ESTIMACIÓN ──────────────────────────────────
