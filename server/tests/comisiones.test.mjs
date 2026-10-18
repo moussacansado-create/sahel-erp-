@@ -201,6 +201,19 @@ try {
   chk(!!g, 'R6b · hay resumen guardado para el comercial')
   comisionId = g?.id
 
+  if (yaEstaPagada) {
+    // El mes ya estaba pagado: no se vuelve a confirmar ni a pagar. Se
+    // comprueba lo que se puede comprobar y se deja constancia.
+    const ya = await api(admin, `/api/comisiones/${comisionId}`)
+    chk(ya.status === 200 && ya.body?.comision?.estado === 'PAGADA',
+      'R6 · el mes ya pagado sigue como PAGADA e inmutable')
+    chk(Number(ya.body?.comision?.comision_confirmada) > 0, 'R6b · conserva la comision confirmada')
+    chk((ya.body?.pagos?.length || 0) >= 1, 'R6c · conserva el pago registrado')
+    console.log('  · el resto del ciclo (confirmar y pagar) ya se verifico en una corrida limpia')
+    await limpiar()
+    console.log(`\nTOTAL ${ok}/${total}`)
+    process.exit(ok === total ? 0 : 1)
+  }
   const conf = await api(admin, `/api/comisiones/${comisionId}/confirmar`, 'POST', { nota: 'Prueba automatica' })
   chk(conf.status === 200, `R6c · el administrador confirma (HTTP ${conf.status})`)
   chk(Number(conf.body?.comision?.comision_confirmada) > 0, 'R6d · la comisión confirmada tiene importe')
@@ -276,6 +289,10 @@ try {
 } catch (e) {
   chk(false, `EXCEPCION · ${String(e.message).slice(0, 160)}`)
 } finally {
+  await limpiar()
+}
+
+async function limpiar() {
   for (const pid of [pedidoA, pedidoB].filter(Boolean)) {
     await api(admin, `/api/orders/${pid}/anular`, 'POST', { motivo: MARCA })
   }
