@@ -31,6 +31,7 @@ import { paginaCompras, paginaProveedores } from './paginas/compras.js'
 import { paginaReparto } from './paginas/reparto.js'
 import { paginaCaja } from './paginas/caja.js'
 import { paginaComerciales } from './paginas/comerciales.js'
+import { paginaComisiones } from './paginas/comisiones.js'
 import { paginaClientes } from './paginas/clientes.js'
 import { paginaMovimientos } from './paginas/movimientos.js'
 import { paginaUsuarios } from './paginas/usuarios.js'
@@ -91,6 +92,15 @@ const RUTAS = [
     // seguimiento de una persona.
     { ruta: 'comerciales', titulo: 'Comerciales', grupo: 'Comerciales',
       permiso: ['commercial', 'view'], render: paginaComerciales },
+
+    // COMISIONES tiene su propio permiso y NO el de comerciales.
+    //
+    // Con `commercial:view` se ve quien es el responsable de una zona, que
+    // es una cosa; con `commissions:view` se ven las ventas de uno y lo que
+    // se le calcula, que es otra. Mezclarlas haria que el comercial viera el
+    // equipo entero, o que el jefe de zona viera las comisiones.
+    { ruta: 'comisiones', titulo: 'Ventas y comisiones', grupo: 'Comerciales',
+      permiso: ['commissions', 'view'], render: paginaComisiones },
 
   // Compras va en su propio grupo porque no es almacén: PEDIR no es tener, y
   // meterlo con las entradas de mercancía acabaría mezclando dos cosas que se

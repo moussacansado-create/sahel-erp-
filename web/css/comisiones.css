@@ -1,0 +1,64 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   VENTAS Y COMISIONES
+   ═══════════════════════════════════════════════════════════════════════════
+   Lo que no está en app.css y hace falta aquí: la rejilla de cifras, los
+   avisos de estado y el color de cada clase de cobro.
+   ── POR QUÉ LOS COBROS TIENEN COLOR ──────────────────────────────────────
+   Un cobro verificado, uno que aún no está verificado y uno rechazado se
+   diferencian POR COLOR, no solo por una palabra en una columna que nadie
+   lee. Pero el color no es el único que dice qué es: cada fila lleva su
+   texto. El color ayuda, no sustituye. */
+
+.comisiones .rejilla-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.comisiones .rejilla-metricas--filtros {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: end;
+}
+.comisiones .rejilla-metricas .metrica {
+  margin: 0;
+}
+
+/* ── LOS AVISOS DE ESTADO ─────────────────────────────────────────────────
+   Uno para lo provisional y otro para lo confirmado. Que se distingan a
+   primera vista es el objetivo: quien mira tiene que saber EN UN SEGUNDO
+   si la cifra que tiene delante es un número que se va a mover o uno que
+   ya está firmado. */
+.comisiones .aviso--info {
+  border-left: 4px solid #2b6cb0;
+  background: #eef4fb;
+}
+.comisiones .aviso--bien {
+  border-left: 4px solid #1f4a3d;
+  background: #eaf3ef;
+}
+
+/* ── LAS FILAS DE COBRO ─────────────────────────────────────────────────── */
+.tabla--cobros tr.cobro--sinverificar td {
+  background: #fdf6e3;
+}
+.tabla--cobros tr.cobro--rechazado td {
+  background: #fbeaea;
+  text-decoration: line-through;
+  text-decoration-color: rgba(150, 40, 40, .35);
+}
+.tabla--cobros tr.cobro--cobrado td {
+  background: #f6f8f5;
+}
+
+/* ── LOS FILTROS Y LOS CAMPOS EN FILA ───────────────────────────────────── */
+.comisiones .pila > .campo {
+  max-width: 520px;
+}
+.comisiones .rejilla-metricas--filtros .campo {
+  max-width: none;
+}
+.comisiones .seccion-mini {
+  margin: 6px 0 0;
+}
+.comisiones .pista {
+  margin: 0 0 4px;
+}
