@@ -121,7 +121,10 @@ export async function ponerPorcentaje({ comercialId, porcentaje, vigenteDesde, m
     // esta fecha, cerrarla con el día de antes dejaría `vigente_hasta` ANTES
     // que `vigente_desde`, y la comprobación de la base lo veta. Solo se
     // cierra la fila ANTERIOR de verdad, que es la de un día antes.
-    const mismaFila = anterior && String(anterior.vigente_desde).slice(0, 10) === desde
+    const diaDe = (v) => (v instanceof Date
+    ? v.toISOString().slice(0, 10)
+    : String(v).slice(0, 10))
+  const mismaFila = anterior && diaDe(anterior.vigente_desde) === desde
     if (anterior && !mismaFila) {
       const cierre = new Date(`${desde}T00:00:00Z`)
       cierre.setUTCDate(cierre.getUTCDate() - 1)
@@ -305,7 +308,19 @@ function redondear(n) {
 // prepara el mes, y SOLO mientras la comisión no esté confirmada: después,
 // lo confirmado es intocable.
 //
-export async function guardarCalculo(comercialId, periodo, c) {
+export async function guardarCalculo(comercialId, periodo, cPrecalculado = null) {
+  // EL CÁLCULO ES DE AQUÍ, NO DE FUERA.
+  //
+  // Guardar lo que le pasen es guardar el valor de otro momento: si quien
+  // llama calculó hace un segundo y desde entonces cambió un cobro, la fila
+  // guarda un número que ya no es verdad. Y así se llegó a tener una base de
+  // CERO guardada con un porcentaje correcto al lado.
+  //
+  // La fila se calcula al guardarse. Una sola fuente, y el resumen guardado
+  // no puede contradecir al detalle.
+  const c = cPrecalculado && cPrecalculado.base_cobrada !== undefined
+    ? cPrecalculado
+    : await calcular(comercialId, periodo)
   const existente = await one(
     `SELECT * FROM com_comisiones WHERE comercial_id = $1 AND periodo = $2`,
     [comercialId, periodo],
@@ -348,25 +363,32 @@ export async function prepararMes(periodo, usuarioId) {
   const { desde, hasta } = rangoDelPeriodo(periodo)
   const mon = await monedaBase()
   // Quién tiene algo: o cobros verificados, o pedidos vendidos en el mes.
-  const comerciales = await query(
+  // Dos consultas y no una con UNION: cada una lleva SUS parámetros, y
+  // una que se lleva de más no es un detalle, es un error de la base.
+  const deVentas = await query(
     `SELECT DISTINCT COALESCE(cp.id, c.comercial_id) AS comercial_id
        FROM sales_orders o
        JOIN customers c ON c.id = o.customer_id
        LEFT JOIN com_perfiles cp ON cp.id = o.comercial_id
       WHERE o.order_date >= $1::date AND o.order_date < $2::date
         AND o.cancelled_at IS NULL AND o.status <> 'DRAFT'
-        AND COALESCE(cp.id, c.comercial_id) IS NOT NULL
-      UNION
-     SELECT DISTINCT COALESCE(cp.id, c.comercial_id) AS comercial_id
+        AND COALESCE(cp.id, c.comercial_id) IS NOT NULL`,
+    [desde.toISOString().slice(0, 10), hasta.toISOString().slice(0, 10)],
+  )
+  const deCobros = await query(
+    `SELECT DISTINCT COALESCE(cp.id, c.comercial_id) AS comercial_id
        FROM payments p
        JOIN sales_orders o ON o.id = p.sales_order_id
        JOIN customers c ON c.id = p.customer_id
        LEFT JOIN com_perfiles cp ON cp.id = o.comercial_id
-      WHERE p.collected_at >= $3::timestamptz AND p.collected_at < $4::timestamptz
+      WHERE p.collected_at >= $1::timestamptz AND p.collected_at < $2::timestamptz
+        AND o.cancelled_at IS NULL
         AND COALESCE(cp.id, c.comercial_id) IS NOT NULL`,
-    [desde.toISOString().slice(0, 10), hasta.toISOString().slice(0, 10),
-      desde.toISOString(), hasta.toISOString()],
+    [desde.toISOString(), hasta.toISOString()],
   )
+  const ids = new Set([...deVentas, ...deCobros]
+    .map((x) => x.comercial_id).filter((x) => x !== null && x !== undefined))
+  const comerciales = [...ids].map((comercial_id) => ({ comercial_id }))
 
   const salidas = []
   for (const { comercial_id } of comerciales) {
