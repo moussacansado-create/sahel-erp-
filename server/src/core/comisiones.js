@@ -127,13 +127,32 @@ export async function ponerPorcentaje({ comercialId, porcentaje, vigenteDesde, m
         [anterior.id, comercialId, cierre.toISOString().slice(0, 10)],
       )
     }
-    const nuevo = await tx.one(
-      `INSERT INTO com_comision_porcentajes
-         (comercial_id, porcentaje, vigente_desde, motivo, creado_por)
-       VALUES ($1,$2,$3::date,$4,$5)
-       RETURNING *`,
-      [comercialId, pct, desde, String(motivo).trim(), usuarioId],
+    // Si YA HAY un porcentaje para ese MISMO día, se REVISA el suyo en vez
+    // de reventar con «violación de unicidad».
+    //
+    // Poner el porcentaje dos veces para la misma fecha no es un error: es
+    // una corrección. Y no se pierde nada: la auditoría guarda el valor
+    // anterior y el nuevo, y los meses ya CONFIRMADOS llevan su porcentaje
+    // congelado, así que revisarlo no les toca.
+    const mismoDia = await tx.one(
+      `SELECT * FROM com_comision_porcentajes
+        WHERE comercial_id = $1 AND vigente_desde = $2::date`,
+      [comercialId, desde],
     )
+    const nuevo = mismoDia
+      ? await tx.one(
+        `UPDATE com_comision_porcentajes
+            SET porcentaje = $2, motivo = $3, creado_por = $4, updated_at = now()
+          WHERE id = $1 RETURNING *`,
+        [mismoDia.id, pct, String(motivo).trim(), usuarioId],
+      )
+      : await tx.one(
+        `INSERT INTO com_comision_porcentajes
+           (comercial_id, porcentaje, vigente_desde, motivo, creado_por)
+         VALUES ($1,$2,$3::date,$4,$5)
+         RETURNING *`,
+        [comercialId, pct, desde, String(motivo).trim(), usuarioId],
+      )
     await tx.query(
       `INSERT INTO com_comision_auditoria
          (comercial_id, accion, valor_anterior, valor_nuevo, motivo, usuario_id)
