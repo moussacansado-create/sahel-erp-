@@ -23,7 +23,7 @@
 //
 // ── LA ATRIBUCIÓN ─────────────────────────────────────────────────────────
 //
-// Al comercial que VENDIÓ (el del pedido), no al que cobró. Si el pedido no
+// Al comercial que VENDIÓ (`sales_orders.comercial_id`), no al que cobró. Si el pedido no
 // lo tiene, el de la ficha del cliente.
 //
 // ── NUNCA SE BORRA UN MOVIMIENTO ──────────────────────────────────────────
@@ -175,7 +175,7 @@ const SQL_COBROS = `
     FROM payments p
     JOIN sales_orders o ON o.id = p.sales_order_id
     JOIN customers c    ON c.id = p.customer_id
-    LEFT JOIN com_perfiles cp ON cp.user_id = o.commercial_id
+    LEFT JOIN com_perfiles cp ON cp.id = o.comercial_id
    WHERE p.collected_at >= $2::timestamptz
      AND p.collected_at <  $3::timestamptz
      AND COALESCE(cp.id, c.comercial_id) = $1
@@ -197,7 +197,7 @@ const SQL_PEDIDOS = `
                     WHERE p.sales_order_id = o.id AND p.status = 'VERIFIED'), 0) AS cobrado
     FROM sales_orders o
     JOIN customers c ON c.id = o.customer_id
-    LEFT JOIN com_perfiles cp ON cp.user_id = o.commercial_id
+    LEFT JOIN com_perfiles cp ON cp.id = o.comercial_id
    WHERE o.order_date >= $2::date
      AND o.order_date <  $3::date
      AND o.cancelled_at IS NULL
@@ -314,7 +314,7 @@ export async function prepararMes(periodo, usuarioId) {
     `SELECT DISTINCT COALESCE(cp.id, c.comercial_id) AS comercial_id
        FROM sales_orders o
        JOIN customers c ON c.id = o.customer_id
-       LEFT JOIN com_perfiles cp ON cp.user_id = o.commercial_id
+       LEFT JOIN com_perfiles cp ON cp.id = o.comercial_id
       WHERE o.order_date >= $1::date AND o.order_date < $2::date
         AND o.cancelled_at IS NULL AND o.status <> 'DRAFT'
         AND COALESCE(cp.id, c.comercial_id) IS NOT NULL
@@ -323,7 +323,7 @@ export async function prepararMes(periodo, usuarioId) {
        FROM payments p
        JOIN sales_orders o ON o.id = p.sales_order_id
        JOIN customers c ON c.id = p.customer_id
-       LEFT JOIN com_perfiles cp ON cp.user_id = o.commercial_id
+       LEFT JOIN com_perfiles cp ON cp.id = o.comercial_id
       WHERE p.collected_at >= $3::timestamptz AND p.collected_at < $4::timestamptz
         AND COALESCE(cp.id, c.comercial_id) IS NOT NULL`,
     [desde.toISOString().slice(0, 10), hasta.toISOString().slice(0, 10),
